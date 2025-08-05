@@ -1,0 +1,192 @@
+#-------------------------------hjy----------------------------
+#### Pathway setting
+setwd("D:/JANE/SYSU/xmktz/data_analysis/analysis_ABSI")
+
+
+#### Packages loading
+options("scipen"=999, "digits"=4)
+library("dplyr")
+library("ggplot2")
+library("poolr")
+library("tidyverse")
+library("caret")
+library("utils")
+library("rsq")
+library("ggthemes")
+library("RColorBrewer")
+library("ggsci")
+library("patchwork")
+library("tcltk")  
+
+#### Profiles loading
+# Loading of group list and related metadata information
+group_list <- read.csv("Metadata.csv",row.names = 1,check.names = F,fileEncoding = 'GBK')
+# Loading of species data matrix
+species_raw_table <- read.csv("species_1419.csv",row.names = 1,check.names = F)
+# Transpose of the data matrix
+species_raw_table <- as.data.frame(t(species_raw_table))
+
+
+#### Prevalence filtering
+# Filter out species with the prevalence lower than 5%
+delete_list <- c()
+n <- c(1:ncol(species_raw_table))
+for (i in n) {
+  if(length(which(species_raw_table[,i]>0))<(nrow(species_raw_table)*0.05)){
+    delete_list <- append(delete_list,i)
+  }  
+}
+species_prev_filter <- species_raw_table[,-delete_list]
+
+
+#### Construct a detect matrix (if 0 then "undetected", if 1 then detected)
+# A detect matrix of species
+species_detect <- species_prev_filter
+n <- c(1:ncol(species_prev_filter))
+p <- c(1:nrow(species_prev_filter))
+for (i in n) {
+  for (j in p) {
+    if(species_prev_filter[j,i]>0){
+      species_detect[j,i] <- 1
+    }
+  }
+}
+
+
+#### Select microbe with presence association with ABSI
+ABSI_list <- subset(group_list,select = c("ABSI"))
+species_detect <- merge(ABSI_list,species_detect,by="row.names")
+row.names(species_detect) <- species_detect[,1]
+species_detect <- species_detect[,-grep("Row.names",colnames(species_detect))]
+species_assoscation_detect <- data.frame(ID=NA,beta_presence=NA,intercept=NA,t_detect=NA,p_species_raw_detect=NA)
+n <- c(2:ncol(species_detect))
+for (i in n) {
+  a <- glm(ABSI ~ species_detect[,i],data = species_detect)
+  b <- summary(a)
+  e1 <- b[["coefficients"]][1,1]
+  c <- b[["coefficients"]][2,3]
+  beta <- b[["coefficients"]][2,1]
+  p_species <- b[["coefficients"]][2,4]
+  ID <- colnames(species_detect)[i]
+  species_assoscation_detect_temp <- data.frame(ID=ID,beta_presence=beta,intercept=e1,t_detect=c,p_species_raw_detect=p_species)
+  species_assoscation_detect <- rbind(species_assoscation_detect,species_assoscation_detect_temp)
+}
+species_assoscation_detect <- species_assoscation_detect[-1,]
+
+
+#### Select microbe with abundance association with ABSI
+species_abundance <- species_prev_filter
+ABSI_list <- subset(group_list,select = c("ABSI"))
+species_abundance <- merge(ABSI_list,species_abundance,by="row.names")
+row.names(species_abundance) <- species_abundance[,1]
+species_abundance <- species_abundance[,-grep("Row.names",colnames(species_abundance))]
+species_assoscation_abundance <- data.frame(ID=NA,beta_abundance=NA,intercept=NA,t_abundance=NA,p_species_raw_abundance=NA)
+n <- c(2:ncol(species_abundance))
+for (i in n) {
+  temp <- species_abundance
+  temp <- temp[which(temp[,i]>0),]
+  a <- glm(ABSI ~ temp[,i],data = temp)
+  b <- summary(a)
+  e1 <- b[["coefficients"]][1,1]
+  c <- b[["coefficients"]][2,3]
+  beta <- b[["coefficients"]][2,1]
+  p_species <- b[["coefficients"]][2,4]
+  ID <- colnames(temp)[i]
+  species_assoscation_abundance_temp <- data.frame(ID=ID,beta_abundance=beta,intercept=e1,t_abundance=c,p_species_raw_abundance=p_species)
+  species_assoscation_abundance <- rbind(species_assoscation_abundance,species_assoscation_abundance_temp)
+}
+species_assoscation_abundance <- species_assoscation_abundance[-1,]
+
+
+#### Calculate their combined p value
+two_stage_p_species_temp1 <- subset(species_assoscation_detect,select = c("ID","p_species_raw_detect","beta_presence","t_detect"))
+two_stage_p_species_temp2 <- subset(species_assoscation_abundance,select = c("ID","p_species_raw_abundance","beta_abundance","t_abundance"))
+two_stage_p_species <- merge(two_stage_p_species_temp1,two_stage_p_species_temp2,by="ID")
+two_stage_p_species$combined_p_species <- NA
+n <- c(1:nrow(two_stage_p_species))
+for (i in n) {
+  z1 <- abs(qnorm(two_stage_p_species$p_species_raw_detect[i]/2))
+  z2 <- abs(qnorm(two_stage_p_species$p_species_raw_abundance[i]/2))
+  z <- (z1+z2)/sqrt(2)
+  p <- (1-pnorm(abs(z)))*2
+  temp <- p
+  two_stage_p_species$combined_p_species[i] <- temp
+}
+#??һ????BHУ??------------------------------------------------------------------------------
+#two_stage_p_species <- two_stage_p_species[order(two_stage_p_species$p_species_raw_detect),]
+#two_stage_p_species$p_species_raw_detect <- p.adjust(two_stage_p_species$p_species_raw_detect,method = "BH")
+#two_stage_p_species <- two_stage_p_species[order(two_stage_p_species$p_species_raw_abundance),]
+#two_stage_p_species$p_species_raw_abundance <- p.adjust(two_stage_p_species$p_species_raw_abundance,method = "BH")
+#two_stage_p_species <- two_stage_p_species[order(two_stage_p_species$combined_p_species),]
+#two_stage_p_species$combined_p_species <- p.adjust(two_stage_p_species$combined_p_species,method = "BH")
+#????----------------------------------------------------------------------------------------
+
+two_stage_p_species$final_p <- NA
+n <- c(1:nrow(two_stage_p_species))
+for (i in n) {
+  two_stage_p_species$final_p[i] <- min(two_stage_p_species[i,c(2,5,8)])
+}
+
+
+#### Summary the associated microbe
+length(which(two_stage_p_species$final_p<0.05))
+two_stage_p_species_diff <- two_stage_p_species[which(two_stage_p_species$final_p<0.05),]
+diff_list <- two_stage_p_species_diff$ID
+
+
+#### Calculate the permutation importance of the final p
+species_two_stage_diff_table <- species_prev_filter[,colnames(species_prev_filter)%in%diff_list]
+permutated_results <- as.data.frame(array(dim=c(100,50)))
+colnames(permutated_results) <- two_stage_p_species_diff$ID
+n <- c(1:ncol(species_two_stage_diff_table))
+p <- c(1:100)
+pb <- tkProgressBar("progress","finish %", 0, 100)
+star_time <- Sys.time() 
+for (i in n) {
+  for (j in p) {
+    permutated_data <- species_two_stage_diff_table
+    permutated_data[,i] <- sample(species_two_stage_diff_table[,i])
+    permutated_data_detect <- permutated_data
+    permutated_data_abundance <- permutated_data
+    q <- c(1:ncol(permutated_data_detect))
+    r <- c(1:nrow(permutated_data_detect))
+    for (l in q) {
+      for (z in r) {
+        if(permutated_data_detect[z,l]>0){
+          permutated_data_detect[z,l] <- 1
+        }
+      }
+    }
+    #1.
+    ABSI_list <- subset(group_list,select = c("ABSI"))
+    permutated_data_detect <- merge(ABSI_list,permutated_data_detect,by="row.names")
+    row.names(permutated_data_detect) <- permutated_data_detect[,1]
+    permutated_data_detect <- permutated_data_detect[,-grep("Row.names",colnames(permutated_data_detect))]
+    p1_temp <- summary(glm(ABSI ~ permutated_data_detect[,(i+1)],data = permutated_data_detect))[["coefficients"]][2,4]
+    #2.
+    ABSI_list <- subset(group_list,select = c("ABSI"))
+    permutated_data_abundance <- merge(ABSI_list,permutated_data_abundance,by="row.names")
+    row.names(permutated_data_abundance) <- permutated_data_abundance[,1]
+    permutated_data_abundance <- permutated_data_abundance[,-grep("Row.names",colnames(permutated_data_abundance))]
+    permutated_data_abundance <- permutated_data_abundance[which(permutated_data_abundance[,i+1]>0),]
+    p2_temp <- summary(glm(ABSI ~ permutated_data_abundance[,(i+1)],data = permutated_data_abundance))[["coefficients"]][2,4]
+    #3.
+    z1 <- abs(qnorm(p1_temp/2))
+    z2 <- abs(qnorm(p2_temp/2))
+    z <- (z1+z2)/sqrt(2)
+    p3_temp <- (1-pnorm(abs(z)))*2
+    #4.
+    pfinal_temp <- min(p1_temp,p2_temp,p3_temp)
+    permutated_results[j,i] <- pfinal_temp
+  }
+  
+  info <- sprintf("finish %d%%", round(i*100/ncol(species_two_stage_diff_table)))  
+  setTkProgressBar(pb, i*100/ncol(species_two_stage_diff_table), sprintf("???? (%s)", info),info)  
+}
+end_time <- Sys.time()  
+close(pb)  
+run_time <- end_time - star_time  
+#### Output the results
+write.csv(permutated_results,"permutated_results_ABSI_species.csv",row.names = F,na = "")
+write.csv(two_stage_p_species,"two_stage_p_species_ABSI.csv",row.names = F,na = "")
+#-------------------------------hjy----------------------------
