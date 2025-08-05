@@ -1,0 +1,58 @@
+#### Pathway setting
+setwd("D:/JANE/SYSU/xmktz/data_analysis/analysis_ABSI")
+
+species_selected <- read.csv("associated_species_ABSI.csv", sep = ",",header = T,stringsAsFactors =F, check.names = F) 
+species_selected <- species_selected[,1:2]
+species_raw_table <- read.csv("species_1419.csv", sep = ",",header = T,stringsAsFactors =F, check.names = F) 
+merge_species <- merge(species_selected,species_raw_table,by="ID")
+rownames(merge_species)<-merge_species$ID
+merge_species <- merge_species[,3:ncol(merge_species)]
+merge_species <- as.data.frame(t(merge_species))
+diff_table <- merge_species
+diff_table$ID <- rownames(diff_table)
+metadata <- read.csv("Metadata.csv", sep = ",",row.names=1,header = T,stringsAsFactors =F, check.names = F,fileEncoding = "GBK") 
+ABSI <- subset(metadata,select = c("ABSI"))
+ABSI$ID <- rownames(ABSI)
+diff_table <- merge(ABSI,diff_table,by="ID")
+row.names(diff_table)=diff_table$ID
+diff_table$ID=NULL
+
+lasso_model <- glmnet::cv.glmnet(x=as.matrix(diff_table[,2:ncol(diff_table)]), y=diff_table$ABSI, alpha=1,nfolds = 10)#??
+Coefficients_temp <- as.matrix(coef(lasso_model,s=lasso_model$lambda.min))
+Coefficients_temp <- data.frame(Coefficients_temp)
+colnames(Coefficients_temp)[1] <- paste("round",1,sep = "")
+lasso_permutated <- Coefficients_temp
+#
+n <- c(1:1000)
+set.seed(9999)
+for (i in n) {
+  lasso_model <- glmnet::cv.glmnet(x=as.matrix(diff_table[,2:ncol(diff_table)]), y=diff_table$ABSI, alpha=1,nfolds = 10)#??
+  Coefficients_temp <- as.matrix(coef(lasso_model,s=lasso_model$lambda.min))
+  Coefficients_temp <- data.frame(Coefficients_temp)
+  colnames(Coefficients_temp)[1] <- paste("round",i,sep = "")
+  lasso_permutated <- cbind(lasso_permutated,Coefficients_temp)
+}
+#
+lasso_permutated <- lasso_permutated[-1,]
+lasso_select <- as.data.frame(array(dim = c(26,2)))#??
+colnames(lasso_select) <- c("ID","frequency")
+lasso_select$ID <- row.names(lasso_permutated)
+n <- c(1:nrow(lasso_permutated))
+for (i in n) {
+  freq <- length(which(lasso_permutated[i,]!=0))/ncol(lasso_permutated)
+  lasso_select$frequency[i] <- freq
+}
+write.csv(lasso_select, "LASSO_result_species_ABSI.csv",row.names = F)
+
+#-----------------?ϲ?---------------------------------------------
+species <- read.csv("????speciesɸѡ.csv", header = T,sep = ",",check.names = F) 
+species_raw_table <- read.csv("species_1419.csv", sep = ",",header = T,stringsAsFactors =F, check.names = F) 
+species <-as.data.frame(t(merge(species,species_raw_table,by="ID")))
+colnames(species) <-species[1,]
+species <- species[-1,]
+write.csv(species,file="????species(permutation+LASSO).csv",row.names = T)
+
+a <- read.csv("????species(permutation+LASSO).csv",row.names = 1)
+b <- read.csv("clinical_data.csv",row.names = 1)
+merge<- merge(species,b,by="row.names")
+write.csv(merge,file="graphpad3.csv",row.names = F)
