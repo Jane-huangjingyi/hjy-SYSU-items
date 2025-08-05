@@ -1,0 +1,59 @@
+#------------------------hjy--------------------
+library(ggplot2)
+library(ggpubr)
+library(agricolae)
+library(vegan)
+
+setwd("D:/JANE/SYSU/xmktz/data_analysis/analysis_ABSI/diffuse analysis") 
+group <- read.csv("Metadata.csv", header = T, sep = ",", check.names = F,fileEncoding = "GBK") 
+group1<-data.frame(group$ABSI_WC)
+colnames(group1)<-"Group"
+rownames(group1) <-group[,1]
+data <- read.csv("species_1419.csv", header = T, sep = ",", check.names = F)
+pic <- read.csv("pick3.csv", header = T,sep = ",", check.names = F)
+
+# log10
+pri <- merge(pic, data, by = "ID")
+row.names(pri) <- pri[,1]
+pri <- pri[,-1]
+pri <- as.data.frame(t(pri))
+pri <- log10(pri)#log10
+group1$ID<-rownames(group1)
+pri$ID <- rownames(pri)
+mer <- merge(pri, group1 ,by = "ID")
+mer <- mer[,-1]
+mer.na <- rbind(colnames(mer),mer)
+
+#name
+name <- NULL
+
+for (i in 1:(ncol(mer)-1)){
+  a <- NULL
+  a$log10 <- mer[,i]
+  a$group <- mer[,ncol(mer)]
+  a$name <- mer[,ncol(mer)]
+  a <- as.data.frame(a)
+  for (j in 1:nrow(a))
+    a[j,3] <- mer.na[1,i]
+  name <- rbind.data.frame(name,a)
+}
+
+#pic
+order <- pic[,1]
+name$name=factor(name$name, levels=c(order))
+
+#---------------------------------------------------
+
+name$group <- factor(name$group,levels=c("0","1","2"))
+
+## draw pic(ggplot)
+#-------------
+ggplot(name, aes(x=name, y=log10))+
+  geom_boxplot(aes(fill = group),position = position_dodge(0.9),width=0.7) +
+  coord_flip()+  
+  labs(title="Species",x="", y="log10(abundance)")+
+  scale_fill_manual(values=c("#45bd9b","#fece71","#f05179"),breaks=c("0","1","2"),labels=c("WC_obsity","same","ABSI_obesity")) +
+  theme(plot.title=element_text(hjust=0.5), legend.title=element_blank(),axis.line = element_line(colour = "black"))+  # ????????
+  theme_bw()
+
+#------------------------hjy--------------------
