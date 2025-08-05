@@ -1,0 +1,85 @@
+#------------------------------hjy--------------------------
+setwd("D:/JANE/SYSU/xmktz/data_analysis/analysis_ABSI") #文件所在路径
+#------------------读取归一化后的----------------------
+data <- read.csv("代谢物1417_归一化.csv", header = T, sep = ",", row.names=1 ,check.names = F)
+#进行归一化
+data_scaled <- scale(data, center = TRUE, scale = TRUE)
+data_scaled <- as.data.frame(data_scaled)
+
+#--------------------层次聚类--------------------
+#hclust(d, method = "complete", members = NULL)
+#plot(x, labels = NULL, hang = 0.1, check = TRUE,
+#     axes = TRUE, frame.plot = FALSE, ann = TRUE,
+#     main = "Cluster Dendrogram",
+#     sub = NULL, xlab = NULL, ylab = "Height", ...)
+
+#---------------------maaslin---------------------
+library(Maaslin2)
+group <- read.csv("Metadata.csv", header = T, row.names = 1, sep = ",", check.names = F)
+group$ABSI_group <- factor(group$ABSI_group,levels=c("1","2","3","4"))#1作为比较组
+fit_data <- Maaslin2(
+  data, group , 'demo_output', transform = "AST",
+  fixed_effects = c('ABSI_group','Sex','Age'),
+  random_effects = c(''),
+  normalization = 'NONE',
+  standardize = FALSE)
+setwd("D:/JANE/SYSU/xmktz/data_analysis/analysis_ABSI/demo_output")
+bri <- read.table("all_results.tsv", header = T, sep = '\t', stringsAsFactors =F,check.names = F)
+write.csv(bri,"all_results.csv",row.names=TRUE)
+
+#——-------------permutation--------------------
+data1 <- as.data.frame(data$ABSI_group)
+colnames(data1)<-"Group"
+data1$ID<- rownames(data)
+pri$ID<- rownames(pri)
+pri <- merge(data1,pri,by="ID")
+row.names(pri) <- pri$ID
+pri <- pri[,-grep("ID",colnames(pri))]
+#构建一个数据框来储存permutation的结果
+#因为我的dataset里第一个是分组信息，所以用ncol-1表示变量数量
+permutated_result <- as.data.frame(array(dim = c((ncol(pri)-1),11)))
+#改变这个数据框column的名字
+colnames(permutated_result)[1] <- "ID"
+permutated_result$ID <- colnames(pri)[2:ncol(pri)]
+#设置每个代谢物的循环次数，测试代码先简单循环10次吧
+#这里看情况，如果跑得太慢的话循环轮数就少些吧，我跑xgboost的permutation 800轮要8小时qaq
+n <- c(1:(ncol(pri)-1))
+p <- c(1:10)
+set.seed(9999)
+for (i in n) {
+  #这里i+1才是我的第一个代谢物
+  data_temp <- pri
+  for (j in p) {
+    data_temp[,i+1] <- sample(data_temp[,i+1])
+    a <- glm(Group~data_temp[,i+1],data = data_temp)
+    b <- summary(a)
+    c <- as.data.frame(coefficients(b))
+    #提取代谢物在模型中对应的t值或p值
+    d <- c[2,3]
+    #这里就先用t值
+    permutated_result[i,j+1] <- d
+  }
+}
+#然后计算原来各个代谢物他们的t值(也可以用p值)
+raw_result <- as.data.frame(array(dim = c((ncol(pri)-1),2)))
+colnames(raw_result)[1] <- "ID"
+colnames(raw_result)[2] <- "value"
+raw_result$ID <- colnames(pri)[2:ncol(pri)]
+n <- c(1:(ncol(pri)-1))
+for (i in n) {
+  a <- glm(Group~pri[,i+1],data = pri)
+  b <- summary(a)
+  c <- as.data.frame(coefficients(b))
+  d <- c[2,3]
+  raw_result$value[i]<- d
+}
+#计算FDR，permutation的几轮t中，绝对值大于raw_results里t绝对值的概率，这个概率就是FDR
+raw_result$permuteted_p <- NA
+n <- c(1:nrow(raw_result))
+for (i in n) {
+  #大于原始t值的permutated t值的比例h(which(abs(permutated_result[i,2:ncol(permutated_result)])>abs(raw_result$value[i])))/10
+  raw_result$permuteted_p[i] <- freq
+}
+
+write.csv(raw_result,"permutation.csv",row.names = F)
+#------------------------------hjy--------------------------
