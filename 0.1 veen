@@ -1,0 +1,40 @@
+#----------------------------hjy------------------------
+library(VennDiagram)
+
+setwd("D:/JANE/SYSU/xmktz/data_analysis/analysis_ABSI") #?ļ?????·??
+data <- read.csv("venn3.csv", header = T, sep = ",", check.names = F)
+
+#-----------------4ά------------------
+venn_list <-list(permutation_group=data$permutation_group,maaslin=data$maaslin,maaslin_group=data$maaslin_group,K_W=data$K_W)
+venn.plot <- venn.diagram(venn_list, filename = NULL,
+  col = "black", lty = "dotted", lwd = 4,
+  fill = c("#bad9ed", "#b8e5bc", "#e2dfb1", "#e4ccec"), alpha = 0.50,
+  label.col = c("orange", "white", "darkorchid4", "white", "white", "black",
+                "white", "white", "darkblue", "white",
+                "white", "white", "white", "darkgreen", "white"),
+  cex = 1.5, fontfamily = "serif", fontface = "bold",
+  cat.col = c("darkblue", "darkgreen", "orange", "darkorchid4"),
+  cat.cex = 1.5, cat.fontfamily = "serif")
+grid.draw(venn.plot)
+
+#-----------------3ά------------------
+#???ӻ?????
+venn_list <-list(permutation_group=data$permutation_group,maaslin=data$maaslin,K_W=data$K_W)
+venn.plot <- venn.diagram(venn_list, filename = NULL,
+  col = "transparent",
+  fill = c("#bad9ed", "#e2dfb1", "#e4ccec"),
+  alpha = 0.5,
+  label.col = c("darkblue", "darkgreen", "orange", "darkred",
+                "black", "#0c6db2", "darkorchid4"),
+  cex = 2.5,fontfamily = "serif",fontface = "bold",
+  cat.default.pos = "text",cat.col = c("darkblue", "orange", "darkorchid4"),
+  cat.cex = 1.5,cat.fontfamily = "serif",
+  cat.dist = c(0.06, 0.06, 0.04),cat.pos = 0);
+grid.draw(venn.plot)
+grid.newpage()
+
+#???佻??Ԫ?ػ???
+inter <- get.venn.partitions(venn_list)
+for (i in 1:nrow(inter)) inter[i,'values'] <- paste(inter[[i,'..values..']], collapse = ', ')
+write.csv(inter[-c(4, 5)], 'venn_inter.csv', row.names = FALSE)
+#----------------------------hjy------------------------
