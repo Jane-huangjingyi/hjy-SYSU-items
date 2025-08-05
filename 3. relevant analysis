@@ -1,0 +1,144 @@
+#-----------------hjy--------------------------------
+setwd("D:/JANE/SYSU/xmktz/data_analysis/analysis_ABSI") 
+metadata <- read.csv("Metadata.csv",row.names = 1,check.names = F,fileEncoding = 'GBK')
+ABSI_list <- subset(metadata,select = c("ABSI","Age","Sex","activity_grade","alcohol","smoke","DD","Chronic_disease"))
+species <- read.csv("????species(permutation+LASSO).csv", header = T,sep = ",",check.names = F,row.names = 1) 
+merge<- merge(ABSI_list,species,by="row.names")
+colnames(merge)[1] <- "ID"
+write.csv(merge,file="species_lm.csv",row.names = FALSE)
+
+####################################################
+#### Profiles loading
+library("ggpmisc")
+theme_set(ggpubr::theme_pubr()+
+            theme(legend.position = "top"))
+library("tidyverse")
+library("pheatmap")
+library("Hmisc")
+library("ggplot2")
+library("Maaslin2")
+library("randomForest")
+library("caret")
+library("ggpubr")
+library("rfPermute")
+library("Boruta")
+library("reshape2")
+library("relaimpo")
+library("rsq")
+# Loading of group list and related metadata information
+metadata <- read.csv("Metadata.csv",row.names = 1,check.names = F,fileEncoding = 'GBK')
+species_raw_table <- read.csv("species_1419.csv",row.names = 1,check.names = F)
+species_raw_table <- as.data.frame(t(species_raw_table))
+species_raw_table <- species_raw_table[row.names(species_raw_table)%in%row.names(metadata),]
+# filtering
+species_prev_table <- species_raw_table
+
+#log
+#species_prev_table <- log(species_prev_table+1,2)
+species_diff_table <- species_prev_table[,colnames(species_prev_table)%in%c("Bacteroides_sp_OM05_12","Escherichia_coli","Ruminococcus_lactaris",
+                                                                            "Anaerotignum_lactatifermentans","Paraprevotella_xylaniphila","Megamonas_funiformis",
+                                                                            "Absiella_dolichum","Dialister_sp_CAG_357",
+                                                                            "Fusobacterium_mortiferum","Parabacteroides_gordonii")]
+
+######
+species_diff_table <- merge(ABSI_list,species_diff_table,by="row.names")
+rownames(species_diff_table) <- species_diff_table[,1]
+species_diff_table <- species_diff_table[,-grep("Row.names",colnames(species_diff_table))]
+species_assoscation_abundance <- data.frame(ID=NA,beta_abundance=NA,intercept=NA,t_abundance=NA,p_species_raw_abundance=NA)#adj_r2=NA
+n <- c(9:ncol(species_diff_table))
+for (i in n) {
+  temp <- species_diff_table
+  a <- glm(ABSI ~ temp[,i],data = temp)
+  b <- summary(a)
+  e1 <- b[["coefficients"]][1,1]
+  c <- b[["coefficients"]][2,3]
+  beta <- b[["coefficients"]][2,1]
+  p_species <- b[["coefficients"]][2,4]
+  #adj_r<- b$adj.r.squared
+  ID <- colnames(temp)[i]
+  species_assoscation_abundance_temp <- data.frame(ID=ID,beta_abundance=beta,intercept=e1,t_abundance=c,p_species_raw_abundance=p_species)#adj_r2=adj_r
+  species_assoscation_abundance <- rbind(species_assoscation_abundance,species_assoscation_abundance_temp)
+}
+species_assoscation_abundance <- species_assoscation_abundance[-1,]
+bb <- species_assoscation_abundance[,1:2]
+species <-as.data.frame(t(species))
+
+species$ID <-rownames(species)
+merbb <- merge(bb,species,by="ID")
+rownames(merbb) <- merbb$ID
+merbb <- merbb[,2:ncol(merbb)]
+write.csv(merbb,"species_caculate_experience.csv")
+
+#-------------use the excel---------------------
+species<-species[,1:ncol(species)-1]
+species <- as.data.frame(t(species))
+lm <- read.csv("species_caculate_experience_lm.csv",check.names = F)
+lm <- lm[,1:2]
+ABSI_list$ID <- rownames(ABSI_list)
+exp <- merge(ABSI_list,lm,by="ID")
+write.csv(exp,"species_lm_score.csv")
+row.names(exp) <-exp$ID
+exp <- exp[,-1]
+cor_test <- rcorr(as.matrix(exp),type = "spearman") 
+r_corr_clinic_abundance_spearman <- cor_test$r
+p_corr_clinic_abundance_spearman <- cor_test$P
+
+p_corr_clinic_abundance_spearman_sig <- 
+  p_corr_clinic_abundance_spearman[2:nrow(p_corr_clinic_abundance_spearman),1]
+r_corr_clinic_abundance_spearman_sig <- 
+  as.data.frame(r_corr_clinic_abundance_spearman[2:nrow(r_corr_clinic_abundance_spearman),1])
+p_fdr_corr_clinic_abundance_spearman_sig <- p.adjust(p_corr_clinic_abundance_spearman_sig,"BH")
+dim(p_fdr_corr_clinic_abundance_spearman_sig) <- c(nrow(p_corr_clinic_abundance_spearman_sig),ncol(p_corr_clinic_abundance_spearman_sig))
+p_corr_clinic_abundance_spearman_sig <- as.data.frame(p_corr_clinic_abundance_spearman_sig)
+p_fdr_corr_clinic_abundance_spearman_sig <- as.data.frame(p_fdr_corr_clinic_abundance_spearman_sig)
+
+pheatmap_data_r <- t(r_corr_clinic_abundance_spearman_sig)
+pheatmap_data_p <- t(p_corr_clinic_abundance_spearman_sig)
+pheatmap_data_p_fdr <- t(p_fdr_corr_clinic_abundance_spearman_sig)
+
+cmt <- pheatmap_data_r
+pmt <- pheatmap_data_p
+pfdrmt <- pheatmap_data_p_fdr
+
+FINAL <- as.data.frame(array(dim=c(8,4)))
+FINAL[,1] <- row.names(p_corr_clinic_abundance_spearman_sig)
+FINAL[,2] <- as.data.frame(t(cmt))
+FINAL[,3] <- as.data.frame(t(pmt))
+FINAL[,4] <- as.data.frame(t(pfdrmt))
+colnames(FINAL)[1] <- 'ID'
+colnames(FINAL)[2] <- 'r'
+colnames(FINAL)[3] <- 'p'
+colnames(FINAL)[4] <- 'fdr'
+
+write.csv(FINAL, "spearman_spcies_score.csv",row.names = F)
+colnames(exp)[9] <- "score"
+summary(lm(ABSI~score,data=exp))
+#panel 1
+a1 <- lm(ABSI~score+Age+Sex,data=exp,na.action=na.exclude)
+b1 <- lm(ABSI~Age+Sex,data=exp,na.action=na.exclude)
+summary(a1)
+summary(b1)
+anova(a1,b1)
+#panel 2
+a2 <-lm(ABSI~score+Age+Sex+activity_grade+alcohol+smoke+DD,data=exp,na.action=na.exclude)
+b2 <- lm(ABSI~Age+Sex+activity_grade+alcohol+smoke+DD,data=exp,na.action=na.exclude)
+summary(a2)
+summary(b2)
+anova(a2,b2)
+#panel 3
+a3 <- lm(ABSI~score+Age+Sex+activity_grade+alcohol+smoke+DD+Chronic_disease,data=exp,na.action=na.exclude)
+b3 <- lm(ABSI~Age+Sex+activity_grade+alcohol+smoke+DD+Chronic_disease,data=exp,na.action=na.exclude)
+summary(a3)
+summary(b3)
+anova(a3,b3)
+
+anova(a3,b2)
+#------------------------------------------------------------------------------------
+lm <- read.csv("species_caculate_experience_lm.csv",check.names = F)
+exp2 <- merge(ABSI_list,lm,by="ID")
+#Bacteroides_sp_OM05_12/Escherichia_coli/Ruminococcus_lactaris
+#Anaerotignum_lactatifermentans/Paraprevotella_xylaniphila/Megamonas_funiformis
+#Absiella_dolichum/Dialister_sp_CAG_357
+#Fusobacterium_mortiferum/Parabacteroides_gordonii
+c1<-lm(ABSI~Absiella_dolichum+Age+Sex+activity_grade+alcohol+smoke+DD+Chronic_disease,data=exp2)
+#-----------------hjy--------------------------------
