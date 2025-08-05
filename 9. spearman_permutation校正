@@ -1,0 +1,56 @@
+#------------------------------hjy------------------------------------------
+microbiome <- read.csv("lasso_microbiome_1384.csv", header = T,  sep = ",",check.names = F,row.names = 1) 
+Clinic<-read.csv("clinic_data.csv",header = T,  sep = ",",check.names = F,row.names = 1)
+##?ϲ????ݼ?
+harmonized<-merge(microbiome,Clinic,by.x = "row.names",by.y = "row.names")
+harmonized$Row.names <- NULL
+
+####cor.test for metabolites and HSI/sleep score
+n <- c(1:15)
+p <- c(16:29)
+pval <- as.data.frame(array(dim = c(15,14)))
+colnames(pval) <- colnames(harmonized)[16:29]
+row.names(pval) <- colnames(harmonized)[1:15]
+rval <- pval
+for (j in p) {
+  for (i in n) {
+    a <- cor.test(harmonized[,j],harmonized[,i],method = "spearman")
+    pval[colnames(harmonized)[i],colnames(harmonized)[j]]=a$p.value
+    rval[colnames(harmonized)[i],colnames(harmonized)[j]] <- a$estimate
+  }
+}
+write.csv(rval,"microbiome_clinic_spearman r_1384.csv",row.names = T,na = "")
+####??л????????
+microbiome<- harmonized[,1:15]
+pathway<- harmonized[,16:29]
+#????һ???µ?ֻ?о??ʹ?л???????ݿ?
+new_data <- cbind(microbiome,pathway)
+#????һ???µ????ݿ򴢴?permuatation fdr
+permutated_p <- as.data.frame(array(dim = c(ncol(microbiome),ncol(pathway))))
+#????????????????????л????
+row.names(permutated_p) <- colnames(microbiome)
+colnames(permutated_p) <- colnames(pathway)
+n <- c(1:ncol(microbiome))
+p <- c((ncol(microbiome)+1):ncol(new_data))
+#ѭ?????Σ?????10??
+set.seed(9999)
+round <- c(1:1000)
+for (i in n) {
+  for (j in p) {
+    raw_p <- as.numeric(cor.test(new_data[,i],new_data[,j],method = "spearman")$p.value)
+    list <- c()
+    for (k in round) {
+      temp <- new_data
+      temp[,i] <- sample(temp[,i])
+      p_val <- as.numeric(cor.test(temp[,i],temp[,j],method = "spearman")$p.value)
+      list <- append(list,p_val)
+    }
+    permutated_value <- length(which(list<raw_p))/length(round)
+    permutated_p[i,(j-length(n))] <- permutated_value
+  }
+}
+#???? permutated_p ??table
+write.csv(permutated_p,"microbiome_cinic_permutation p_1384.csv",row.names = T,na = "")
+
+permutated_p<-read.csv("microbiome_cinic_permutation p_1384.csv",header = T, row.names = 1)
+#------------------------------hjy------------------------------------------
