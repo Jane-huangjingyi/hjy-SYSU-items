@@ -1,0 +1,43 @@
+#----------------------------hjy---------------------------------
+library(tidyverse)
+library(pheatmap)
+library(Hmisc)
+setwd("D:/JANE/SYSU/xmktz/data_analysis/analysis_ABSI") 
+pathway <- read.csv("pathway_1419.csv",row.names=1,check.names = F)
+metabolic <- pathway
+metabolic <- read.csv("代谢物1417.csv",row.names=1,check.names = F)
+metabolic <- as.data.frame(t(metabolic))
+data <- read.csv("clinical_data.csv",check.names = F,row.names=1,fileEncoding = 'GBK')
+ABSI <- subset(data,select = c("ABSI"))
+rownames(ABSI) <- rownames(data)
+merge <- merge(ABSI,metabolic,by="row.names")
+rownames(merge)<- merge[,1]
+merge$Row.names=NULL
+
+pick4 <- merge[,colnames(merge)%in%c("B119","B132","B64","B558","B309")]
+colnames(pick4)<- c("P461-PWY","PROPFERM-PWY","GLYCOLYSIS","UDPNAGSYN-PWY","PWY-6307")
+pick4_final <- log10(pick4)
+pick4_final <- merge(ABSI,pick4_final,by="row.names")
+rownames(pick4_final)<- pick4_final[,1]
+pick4_final$Row.names=NULL
+write.csv(pick4_final,"仙桃PATHWYA_LOG10.csv",row.names = F)
+
+pick2 <- merge[,colnames(merge)%in%c("C335","C62","C377")]
+colnames(pick2)<- c("L-serine","Tryptamine","N-Methyltryptamine")
+#pick2_final <- pick2
+pick2_final <- log10(pick2)
+pick2_final <- merge(ABSI,pick2_final,by="row.names")
+rownames(pick2_final)<- pick2_final[,1]
+pick2_final$Row.names=NULL
+write.csv(pick2_final,"仙桃PROPFERM-PWY_LOG10.csv",row.names = T)
+
+
+pick1 <- merge[,colnames(merge)%in%c("C49","C196","C195","C16","C318","C329","C27")]
+colnames(pick1)<- c("Xanthine","Uric acid","Phosphoenolpyruvate","L-glutamate","L-threo-3-Methylaspartate","L-lysine","L-Homocitrulline")
+#pick1_final <- pick1
+pick1_final <- log10(pick1)
+pick1_final <- merge(ABSI,pick1_final,by="row.names")
+rownames(pick1_final)<- pick1_final[,1]
+pick1_final$Row.names=NULL
+write.csv(pick1_final,"仙桃P461-PWY_LOG10.csv")
+#----------------------------hjy---------------------------------
