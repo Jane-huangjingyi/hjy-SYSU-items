@@ -1,0 +1,196 @@
+#--------------------------------hjy------------------------------
+library("Hmisc")
+library("igraph")
+library("export")
+library("psych")
+library("vegan")
+library("dplyr")
+library("reshape2")
+library("colorspace")
+setwd("D:/JANE/SYSU/xmktz/data_analysis/analysis_ABSI") 
+
+species <- read.csv("species_1419.csv",check.names = F)
+#choose <-read.csv("差异species筛选25.csv",check.names = F)
+#merge <- merge(species,choose,by="ID")
+#row.names(merge) <- merge[,1]
+row.names(species) <- species[,1]
+species <- as.data.frame(t(species[,-1]))
+delete_list <- c()
+n <- c(1:ncol(species))
+for (i in n) {
+  if(length(which(species[,i]>0))<(nrow(species)*0.05)){
+    delete_list <- append(delete_list,i)
+  }  
+}
+species <- species[,-delete_list]
+#_normal#abdominal_obesity
+data <- read.csv("Metadata_abdominal_obesity.csv",check.names = F,row.names=1,fileEncoding = 'GBK')
+ABSI <- subset(data,select = c("ABSI"))
+ABSI_group <- subset(data,select = c("ABSI_obesity"))
+rownames(ABSI) <- rownames(data)
+species <- merge(species,ABSI,by="row.names")
+row.names(species) <- species[,1]
+species <- species[,-1]
+species <- species[,1:ncol(species)-1]
+
+
+#write.csv(species,"差异species(permutation).csv")
+#library("DGCA")
+#darmanis这个数据框就是菌群的数据框，转置后每一个列名是菌名
+#darmanis <- as.data.frame(species)
+#design_mat <- as.matrix(ABSI_group)
+#ddcor_res = ddcorAll(inputMat = darmanis, design = design_mat, compare = c("0", "1"))
+
+#---------------------------------------------------------------------------------
+occor = rcorr(as.matrix(species),type="spearman")
+occor.r = occor$r # 取相关性矩阵R值
+occor.p = occor$P # 取相关性矩阵p值
+occor.fdr <- p.adjust(occor.p, method="fdr")
+
+
+#### Calculate the permutation importance of p
+permutated_p <- as.data.frame(array(dim = c(ncol(species),ncol(species))))
+#改名行名菌名，列名代谢物名
+row.names(permutated_p) <- colnames(species)[1:ncol(species)]
+colnames(permutated_p) <- colnames(species)[1:ncol(species)]
+n <- c(1:ncol(species))
+p <- c(1:ncol(species))
+set.seed(9999)
+round <- c(1:1000)
+for (i in n) {
+  for (j in p) {
+    raw_p <- as.numeric(cor.test(species[,i],species[,j],method = "spearman")$p.value)
+    list <- c()
+    for (k in round) {
+      temp <- species
+      temp[,i] <- sample(temp[,i])
+      p_val <- as.numeric(cor.test(temp[,i],temp[,j],method = "spearman")$p.value)
+      list <- append(list,p_val)
+    }
+    permutated_value <- length(which(list<raw_p))/length(round)
+    permutated_p[j-length(n),i] <- permutated_value
+  }
+}
+
+occor.fdr = as.matrix(permutated_p) # 取相关性矩阵p值  
+
+
+#=============================输出绘图文件1===========================================
+r.cutoff=0.25
+p.cutoff=0.05
+#在只考虑“正相关”情况下；
+r.matrix<-occor.r
+p<-occor.fdr
+#将矩阵中不符合条件的r值替换为0；
+r.matrix[which(abs(occor.r) < r.cutoff)]=0
+r.matrix[which(occor.fdr>p.cutoff)]=0
+
+#删掉相关系数矩阵数据全都为0（对角线处的1不计）的行和列；
+r.matrix<-r.matrix[which(rowSums(r.matrix)!=1),]
+r.matrix<-r.matrix[,which(colSums(r.matrix)!=0)]
+
+#查看过滤后的矩阵；
+dim(r.matrix)
+r.matrix[1:7,1:7]
+#使用邻接矩阵（即相关系数矩阵）创建网络；
+g1<-graph.adjacency(r.matrix,weight=T,mode="undirected")
+#去掉冗余的边（multiple edges、loop edges）；
+g1<-simplify(g1)
+
+#生成网络图的结点标签（OTU id）和degree属性；
+V(g1)$label <- V(g1)$name
+V(g1)$degree <- degree(g1)
+
+#查看网络图的对象结构;
+print(g1)
+write_graph(g1, "g2.graphml", format="graphml")
+
+#======================================================================================
+#===============================输出绘图文件2=========================================
+occor.r[occor.fdr>0.05] = 0 #|abs(occor.r)<0.2
+diag(occor.r) <- 0 
+occor.r[upper.tri(occor.r)] <- 0
+df=melt(as.matrix(occor.r))#保存成可以用gephi的格式
+#构建gephi边文件
+df$Var1=as.character(df$Var1) #转换为character
+df$Var2=as.character(df$Var2)
+df1=subset(df,!df$Var1==df$Var2) #删除自相关
+colnames(df1)=c("Source", "Target", "Weight")
+df1=subset(df1,!df1$Weight==0) #去除权重为0的边
+df1$pn[which(df1$Weight<0)] <- "negative"
+df1$pn[which(df1$Weight>0)] <- "positive"
+write.csv(df1,"edge.csv",row.names = F) #导出边文件
+
+df2=data.frame(id=unique(c(df1$Source,df1$Target)))
+df2$Lable <- df2$id
+pn <-read.csv("差异species筛选25_pn.csv",check.names = F)
+df3 <- merge(df2,pn,by="id")
+write.csv(df3,"node.csv",row.names = F) #输出节点文件
+
+#===============================直接画=========================================
+##### for JY
+# choosing HCL-based color palettes
+# 查看所有的颜色画板
+#occor.r[occor.p>0.05] = 0 
+occor.r[occor.fdr>0.05] = 0 #|abs(occor.r)<0.6
+sum(which(occor.r != 0))
+# 构建igraph对象
+igraph = graph_from_adjacency_matrix(occor.r,mode="undirected",weighted=TRUE,diag=FALSE)
+igraph
+# NOTE:可以设置weighted=NULL,但是此时要注意此函数只能识别相互作用矩阵内正整数，所以应用前请确保矩阵正确。
+# 可以按下面命令转换数据
+# occor.r[occor.r!=0] = 1
+# igraph = graph_from_adjacency_matrix(occor.r,mode="undirected",weighted=NULL,diag=FALSE)
+
+# 是否去掉孤立顶点，根据自己实验而定——remove isolated nodes，即去掉和所有otu均无相关性的otu可省略，前期矩阵已处理过
+bad.vs = V(igraph)[degree(igraph) == 0]
+igraph = delete.vertices(igraph, bad.vs)
+igraph
+# 将igraph weight属性赋值到igraph.weight
+igraph.weight = E(igraph)$weight
+# 做图前去掉igraph的weight权重，因为做图时某些layout会受到其影响
+E(igraph)$weight = NA
+
+# 简单出图
+# 设定随机种子数，后续出图都从同一随机种子数出发，保证前后出图形状相对应
+set.seed(123)
+plot(igraph,main="Co-occurrence network",vertex.frame.color=NA,vertex.label=NA,edge.width=1,
+     vertex.size=5,edge.lty=1,edge.curved=TRUE,margin=c(0,0,0,0), layout = layout_nicely)
+
+
+#####到这一步就是一个Co-occurrence 的雏形，后面的代码是根据需要进行颜色，线条大小等优化
+
+# 如果构建网络时，weighted=NULL,此步骤不能统计
+#sum(igraph.weight>0)# number of postive correlation
+#sum(igraph.weight<0)# number of negative correlation
+
+# set edge color，postive correlation 设定为red, negative correlation设定为blue
+E.color = igraph.weight
+E.color = ifelse(E.color>0, "#eb9498",ifelse(E.color<0, "#3787b1","grey"))
+E(igraph)$color = as.character(E.color)
+
+# set edge width by Correlation coefficient 
+E(igraph)$width = abs(igraph.weight)*4
+
+#  modularity
+fc = cluster_fast_greedy(igraph,weights =NULL)# cluster_walktrap cluster_edge_betweenness, cluster_fast_greedy, cluster_spinglass
+modularity = modularity(igraph,membership(fc))
+# node color for module
+comps = membership(fc)
+colbar = rainbow(max(comps))
+#colbar = sequential_hcl(max(comps), palette = "sunset")
+V(igraph)$color = colbar[comps] 
+
+# set vertices size
+#igraph.size = otu_pro[V(igraph)$name,] 
+#igraph.size1 = log((igraph.size$abundance)*100) 
+#V(igraph)$size = igraph.size1
+V(igraph)$size = degree(igraph)/max(degree(igraph))*10+5
+
+set.seed(100)
+plot(igraph,main="Co-occurrence network", edge.lty=1,edge.curved=TRUE,
+     margin=c(-0.2,-0.2,-0.1,-0.2), layout = layout_nicely)
+
+graph2ppt(file="n.ppt", width=15, height=10)
+
+#--------------------------------hjy------------------------------
