@@ -1,0 +1,147 @@
+#------------------------hjy--------------------------
+library(tidyverse)
+library(pheatmap)
+library(Hmisc)
+library(export)
+library(ComplexHeatmap)
+library(wordcloud2)
+
+setwd("D:/JANE/SYSU/xmktz/data_analysis/analysis_ABSI") 
+
+#--------------------------------------------------------------
+species <- read.csv("差异species(permutation).csv", header = T,row.names=1,sep = ",",check.names = F)
+pathway <- read.csv("差异pathway(permutation+LASSO).csv",row.names=1,header = T,sep = ",",check.names = F)
+metabolic <- read.csv("仙桃PROPFERM-PWY_LOG10.csv",header = T,row.names=1,sep = ",",check.names = F) 
+clinical_data <- read.csv("clinical_data1.csv", row.names=1,header = T,  sep = ",",check.names = F) 
+
+merge1 <- merge(species,pathway,by="row.names")
+rownames(merge1)<-merge1[,1]
+merge1$Row.names=NULL
+merge2 <- merge(merge1,clinical_data,by="row.names")
+rownames(merge2)<-merge2[,1]
+merge2$Row.names=NULL
+merge3 <- merge(metabolic,merge2,by="row.names")
+rownames(merge3)<-merge3[,1]
+merge3$Row.names=NULL
+
+merge4 <- merge(metabolic,clinical_data,by="row.names")
+rownames(merge4)<-merge4[,1]
+merge4$Row.names=NULL
+
+ABSI <- subset(merge4,select = c("ABSI"))
+rownames(ABSI) <- rownames(merge4)
+cor <- merge4
+
+#----------------------- ---------------------------
+cor_test <- rcorr(as.matrix(cor),type = "spearman") 
+r_corr_clinic_abundance_spearman <- cor_test$r
+p_corr_clinic_abundance_spearman <- cor_test$P
+
+u <- 3 #10/11/42
+p_corr_clinic_abundance_spearman_sig <- 
+  p_corr_clinic_abundance_spearman[(u+1):nrow(p_corr_clinic_abundance_spearman),1:u]
+r_corr_clinic_abundance_spearman_sig <- 
+  as.data.frame(r_corr_clinic_abundance_spearman[(u+1):nrow(r_corr_clinic_abundance_spearman),1:u])
+
+#permutation校正
+permutated_p <- as.data.frame(array(dim = c(nrow(p_corr_clinic_abundance_spearman)-u,u)))
+rownames(permutated_p) <- rownames(p_corr_clinic_abundance_spearman_sig)
+colnames(permutated_p) <- colnames(p_corr_clinic_abundance_spearman_sig)
+n <- c(1:u)
+p <- c((u+1):ncol(cor))
+set.seed(9999)
+round <- c(1:100)
+for (i in n) {
+  for (j in p) {
+    raw_p <- as.numeric(cor.test(cor[,i],cor[,j],method = "spearman")$p.value)
+    list <- c()
+    for (k in round) {
+      temp <- cor
+      temp[,i] <- sample(temp[,i])
+      p_val <- as.numeric(cor.test(temp[,i],temp[,j],method = "spearman")$p.value)
+      list <- append(list,p_val)
+    }
+    permutated_value <- length(which(list<raw_p))/length(round)
+    permutated_p[j-length(n),i] <- permutated_value
+  }
+}
+p_fdr_corr_clinic_abundance_spearman_sig<-permutated_p
+#fdr校正
+#p_fdr_corr_clinic_abundance_spearman_sig <- p.adjust(p_corr_clinic_abundance_spearman_sig,"fdr")
+
+#-----------------------------------------------------------
+#dim(p_fdr_corr_clinic_abundance_spearman_sig) <- c(nrow(p_corr_clinic_abundance_spearman_sig),ncol(p_corr_clinic_abundance_spearman_sig))
+p_corr_clinic_abundance_spearman_sig <- as.data.frame(p_corr_clinic_abundance_spearman_sig)
+p_fdr_corr_clinic_abundance_spearman_sig <- as.data.frame(p_fdr_corr_clinic_abundance_spearman_sig)
+
+pheatmap_data_r <- t(r_corr_clinic_abundance_spearman_sig)
+pheatmap_data_p <- t(p_corr_clinic_abundance_spearman_sig)
+pheatmap_data_p_fdr <- t(p_fdr_corr_clinic_abundance_spearman_sig)
+
+cmt <- pheatmap_data_r
+pmt <- pheatmap_data_p
+pfdrmt <- pheatmap_data_p_fdr
+
+#add sig
+
+if (!is.null(pmt)){
+  ssmt <- pfdrmt < 0.05
+  pmt[ssmt] <-'**'
+  smt <- pfdrmt >=0.05& pfdrmt <0.1 & pmt<0.05
+  pmt[smt] <- '*'
+  mt <- pfdrmt >=0.1& pfdrmt <0.3 & pmt<0.05
+  pmt[mt] <- "+"
+  pmt[!ssmt&!smt&!mt]<- ''
+} else {
+  pmt <- F
+}
+
+
+#breaks
+bk <- c(seq(-0.1,0,by=0.01),seq(0,0.1,by=0.01))
+
+#================annotation======================================================
+annotation <- c()
+annotation$ID <- colnames(species)
+annotation$Association_with_body_shape <- NA
+n <- c(1:ncol(species))
+species1 <- merge(ABSI,species,by="row.names")
+rownames(species1) <-species1[,1]
+species1 <-as.data.frame(species1[,3:ncol(species1)])
+for (i in n) {
+  r <- as.numeric(cor.test(ABSI$ABSI,species1[,i],method = "spearman")$estimate)
+  annotation$r[i]<-r
+}
+annotation$Association_with_body_shape[which(annotation$r<0)] <- "negative"
+annotation$Association_with_body_shape[which(annotation$r>0)] <- "positive"
+annotation <- as.data.frame(annotation)
+
+annotation_row <- annotation
+rownames(annotation_row) <- annotation_row$ID
+annotation_row$ID=NULL
+annotation_row$r=NULL
+
+
+anno_color<-list(Association_with_body_shape = c(negative = "#0073C2", positive = "#CD534C"))
+# Draw heatmaps
+a <- pheatmap(cmt,
+             scale = "none",
+             #legend = F,
+             fontface = 2,
+             fontfamily = "serif",#"sans" #"mono"
+             color = c(colorRampPalette(colors = c("#2d81a7","white"))(length(bk)/2), colorRampPalette(colors = c("white","#f39292"))(length(bk)/2)),
+             #gaps_col = c(3,5,9,11),#3,5,9,11 #10,21,24,26,30,33
+             breaks=bk,
+             cellwidth = 15, cellheight = 12,
+             angle_col = "270",
+             display_numbers = pmt,
+             fontsize = 8, 
+             number_color = "black",
+             cluster_row = F,
+             cluster_cols = F,
+             #annotation_row = annotation_row,
+             #annotation_col = annotation_col,
+             annotation_colors = anno_color)
+a
+graph2ppt(file="a.ppt", width=15, height=10)
+#------------------------hjy--------------------------
