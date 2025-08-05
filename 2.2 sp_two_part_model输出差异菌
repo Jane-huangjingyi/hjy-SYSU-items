@@ -1,0 +1,66 @@
+#------------------------------hjy-------------------------
+#### Pathway setting
+setwd("D:/JANE/SYSU/xmktz/data_analysis/analysis_ABSI")
+
+#### Packages loading
+options("scipen"=999, "digits"=4)
+library("dplyr")
+library("ggplot2")
+library("poolr")
+library("tidyverse")
+library("rsq")
+
+
+#### Profiles loading
+# Loading of species data matrix
+species_raw_table <- read.csv("species_1419.csv",row.names = 1,check.names = F)
+# Loading the results of two stage association analysis
+two_stage_p_species <- read.csv("two_stage_p_species_ABSI.csv",check.names = F)
+# Loading the results of permutated test
+permutated_results <- read.csv("permutated_results_ABSI_species.csv",check.names = F)
+# Transpose of the data matrix
+species_raw_table <- as.data.frame(t(species_raw_table))
+
+
+#### Calculate the permuated final p value based on permutation
+two_stage_p_species$FDR <- NA
+two_stage_p_species_diff <- two_stage_p_species[two_stage_p_species$ID%in%colnames(permutated_results),]
+n <- c(1:nrow(two_stage_p_species_diff))
+for (i in n) {
+  ID <- two_stage_p_species_diff$ID[i]
+  cut_p <- two_stage_p_species_diff$final_p[i]
+  two_stage_p_species_diff$FDR[i] <- length(which(permutated_results[,two_stage_p_species_diff$ID[i]]<cut_p))/nrow(permutated_results)
+}
+
+
+#### set the FDR at 0.05 
+species_diff <- two_stage_p_species_diff[which(two_stage_p_species_diff$FDR<0.05),]
+
+
+#### Confirm the direction of association and calculate the z value
+species_diff$z_detect <- NA
+species_diff$z_abundance <- NA
+species_diff$z_combine <- NA
+n <- c(1:nrow(species_diff))
+for (i in n) {
+  species_diff$z_detect[i] <- qnorm(((species_diff$p_species_raw_detect[i])/2),lower.tail = F)
+  species_diff$z_abundance[i] <- qnorm(((species_diff$p_species_raw_abundance[i])/2),lower.tail = F)
+  species_diff$z_combine[i] <- qnorm(((species_diff$combined_p_species[i])/2),lower.tail = F)
+}
+species_diff$association_direct <- NA
+n <- c(1:nrow(species_diff))
+for (i in n) {
+  if(species_diff$beta_abundance[i]>0){
+    species_diff$association_direct[i] <- "Postive"
+  }else {
+    species_diff$association_direct[i] <- "Negative"
+  }
+}
+
+
+#### Redesign the output dataframe
+cols <- colnames(species_diff)
+new_cols <- c(cols[1],cols[3],cols[6],cols[4],cols[7],cols[11:13],cols[2],cols[5],cols[8:10],cols[14])
+species_diff <- species_diff[,new_cols]
+write.csv(species_diff,"associated_species_ABSI.csv",na = "")
+#------------------------------hjy-------------------------
