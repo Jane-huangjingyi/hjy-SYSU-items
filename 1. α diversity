@@ -1,0 +1,62 @@
+#------------hjy-------------------
+#title: "Shannon Index"
+setwd("D:/JANE/SYSU/xmktz/data_analysis/analysis_ABSI")
+# library
+library(ggplot2)
+library(ggpubr)
+library(agricolae)
+library(vegan)
+
+# file read & reshape
+pri <- read.csv("genus_1419.csv", header = T, row.names = 1, sep = ",",check.names = F) 
+pri <- as.data.frame(t(pri))
+
+# shannon calculate
+shannon <- data.frame(diversity(pri,"shannon"))
+simpson <- data.frame(diversity(pri,"simpson"))
+inv.simpson<- data.frame(diversity(pri,"invsimpson"))
+names(shannon) <- "shannon"
+names(simpson) <- "simpson"
+names(inv.simpson) <- "inv.simpson"
+shannon$ID <- row.names(shannon)
+simpson$ID <- row.names(simpson)
+inv.simpson$ID <- row.names(inv.simpson)
+alpha <- merge (shannon,simpson,by="ID")
+alpha <- merge (alpha,inv.simpson,by="ID")
+
+# add group
+group <- read.csv("clinical_data.csv", header = T, row.names=1,sep = ",", check.names = F,fileEncoding = "GBK")
+group$ID <- row.names(group)
+mer_alpha <- merge(alpha, group, by = "ID")
+write.csv(mer_alpha, "grapad1.csv",row.names = F) 
+mer_alpha<-read.csv("grapad1.csv",row.names = 1) 
+
+b <- ggplot(mer_alpha, aes(x =ABSI , y =simpson))
+# Add a loess smoothed fit curve
+b + geom_point(colour="#4b9ed2",size=0.5)+
+  geom_smooth(method = "lm", color = "#4b9ed2", fill = "#b7d8ed",se = TRUE)+
+  stat_cor(method = "spearman", 
+           label.x = 0.05, label.y = 0.06)#+labs(x="Species score (*100)")
+
+
+# visible pic shannon(example)
+ggboxplot(mer_alpha, x="group1", y="shannon",color = "group1",
+          add = "jitter",short.panel.labs = FALSE)+
+  #scale_x_discrete(labels = c("WC_obsity","same","ABSI_obesity"))+
+  #scale_color_manual(values=c("#45bd9b","#fece71","#f05179"),breaks=c("0","1","2"),labels=c("WC_obsity","same","ABSI_obesity"))+
+  scale_x_discrete(labels = c("ABSI_obesity","WC_obsity"))+
+  scale_color_manual(values=c("#f05179","#45bd9b"),breaks=c("1","2"),labels=c("ABSI_obesity","WC_obsity"))+
+  labs(title="Alpha diversity_Genus", x="",y="Shannon index")+ 
+  theme(plot.title=element_text(hjust=0.5), legend.title=element_blank())+  
+  stat_compare_means(label.x=1,label.y=0.1 ,method = 'wilcox.test',size=4)
+
+## group male/female shannon(example)
+ggboxplot(mer_alpha, x="group2", y="simpson",color = "group2",
+          add = "jitter",short.panel.labs = FALSE)+
+  scale_x_discrete(labels = c("Q1","Q2","Q3","Q4"))+
+  scale_color_manual(values=c("#f05179","#fece71","#45bd9b","#2b557d"),breaks=c("1","2","3","4"),labels=c("Q1", "Q2", "Q3","Q4"))+
+  labs(title="Alpha diversity_Species", x="",y="Shannon index")+ 
+  theme(plot.title=element_text(hjust=0.5), legend.title=element_blank())+  
+  stat_compare_means(label.x=1.8,label.y=3.7 ,method = 'kruskal',size=3)
+
+#------------hjy-------------------
