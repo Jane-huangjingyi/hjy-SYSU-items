@@ -1,0 +1,40 @@
+#---------------------------------------hjy--------------------------------------
+setwd("D:/JANE/SYSU/xmktz/data_analysis/analysis_ABSI") 
+data <- read.csv("Metadata.csv",check.names = F,fileEncoding = "GBK")
+group <- subset(data,select = c("ID","ABSI","ABSI_obesity","WC_obesity","Age","Sex","activity_grade","alcohol","smoke","DD","Chronic_disease"))
+lm <- read.csv("species_caculate_experience_lm.csv",check.names = F)
+mer <- merge(lm,group,by="ID")
+
+colnames(mer)[2] <- "score"
+
+a <- glm(ABSI_obesity~score,family = binomial(link = "logit"),data=mer)
+#panel 1
+a1 <- glm(ABSI_obesity~score+Age+Sex,family = binomial(link = "logit"),data=mer)
+b1 <- glm(ABSI_obesity~Age+Sex,family = binomial(link = "logit"),data=mer)
+#panel 2
+a2 <-glm(ABSI_obesity~score+Age+Sex+activity_grade+alcohol+smoke+DD,family = binomial(link = "logit"),data=mer)
+b2 <- glm(ABSI_obesity~Age+Sex+activity_grade+alcohol+smoke+DD,family = binomial(link = "logit"),data=mer)
+#panel 3
+a3 <- glm(ABSI_obesity~score+Age+Sex+activity_grade+alcohol+smoke+DD+Chronic_disease,family = binomial(link = "logit"),data=mer)
+b3 <- glm(ABSI_obesity~Age+Sex+activity_grade+alcohol+smoke+DD+Chronic_disease,family = binomial(link = "logit"),data=mer)
+
+
+#options(scipen = 200)
+#options(scipen = 1)
+a<-a3
+
+p<-summary(a)$coefficients[,4]
+wald<-summary(a)$coefficients[,3]^2
+valueB<-coef(a)
+valueOR<-exp(coef(a))
+confitOR<-exp(confint(a))
+ 
+logistics_a <-data.frame(
+  B=round(valueB,3),
+  Wald=round(wald,3),
+  OR_with_CI=paste(round(valueOR,digits = 3),"(",
+                    round(confitOR[,1],digits = 3),"~",round(confitOR[,2],digits = 3),")",sep=""),
+  P=format.pval(p,digits = 3,eps=0.001))
+
+write.csv(logistics_a,file="species_logistic_result.csv",row.names = TRUE)
+#---------------------------------------hjy--------------------------------------
