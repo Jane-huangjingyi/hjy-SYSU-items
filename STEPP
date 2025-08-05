@@ -1,0 +1,23 @@
+#### Pathway setting
+setwd("D:/JANE/SYSU/xmktz/data_analysis/analysis_Anserine/0. 数据处理")
+library("stepp")#加载STEPP包
+data_new <- read.csv("STEPP.csv")
+
+#---------------UUE-----------------------------------------------------------
+steppCI1 <- stepp("CI", coltrt=data_new$trt, trts=c(3,1), coltime=data_new$time, 
+                 coltype=data_new$event, covar=data_new$UUE,
+                 patspop=40,minpatspop=20, timest=1, noperm=2500,options(scipen=200))
+#这里是画图
+stepp_plot(steppCI1,ncex=0.70,legendy=30,pline=-1.2,color=c("#01468b","#aa1717"),
+           xlabel="Subpopulations by Median UUE",ylabel="Uric acid reduced tonormal",
+           tlegend=c("Placebo","Anserine"), nlas=3,pointwise=TRUE)
+
+#---------------FEUA----------------------------------------------------------
+options(scipen=200)
+steppCI2 <- stepp("CI", coltrt=data_new$trt, trts=c(3,1), coltime=data_new$time, 
+                 coltype=data_new$event, covar=data_new$FEUA,
+                 patspop=40,minpatspop=20, timest=1, noperm=2500)
+#这里是画图
+stepp_plot(steppCI2,ncex=0.70,legendy=30,pline=-1.2,color=c("#01468b","#aa1717"),
+           xlabel="Subpopulations by Median FEUA",ylabel="Uric acid reduced tonormal",
+           tlegend=c("Placebo","Anserine"), nlas=3,pointwise=TRUE)
