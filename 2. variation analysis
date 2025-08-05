@@ -1,0 +1,166 @@
+#-------------------------hjy--------------------------
+#loading
+library(Maaslin2)
+
+#read file
+setwd("D:/JANE/SYSU/xmktz/data_analysis/analysis_ABSI") #the pathway of file
+data <- read.csv("Metadata.csv",row.names = 1,check.names = F,fileEncoding = 'GBK')
+pri <- read.csv("species_1419.csv",row.names = 1,check.names = F)
+species_raw_table <- as.data.frame(t(pri))
+
+#### Prevalence filtering
+# Filter out species with the prevalence lower than 5%
+delete_list <- c()
+n <- c(1:ncol(species_raw_table))
+for (i in n) {
+  if(length(which(species_raw_table[,i]>0))<(nrow(species_raw_table)*0.05)){
+    delete_list <- append(delete_list,i)
+  }  
+}
+species_prev_filter <- species_raw_table[,-delete_list]
+
+
+#-------------------way1(species)------------------------------------
+#The following is data that forces a factor to be a categorical variable,
+#defined as a categorical variable, because if the grouping is"1,2,3",
+#the system considers it a continuous number,,
+#and all categorical factors require the following operation
+
+setwd("D:/JANE/SYSU/xmktz/data_analysis/analysis_ABSI") #the pathway of file
+data$ABSI_WC <- factor(data$ABSI_WC,levels=c("1","2"))#group 1 as control group
+fit_data <- Maaslin2(
+  species_prev_filter ,data,  'demo_output', transform = "AST",
+  fixed_effects = c('ABSI_WC','Sex','Age'),
+  random_effects = c(''),
+  normalization = 'NONE',
+  standardize = FALSE)
+#note
+#put the Correction Factor in fixed_effects, the first factor "GROUP" as the main outcome 
+#The output file will automatically create a "demo_output" in your working directory
+setwd("D:/JANE/SYSU/xmktz/data_analysis/analysis_ABSI/demo_output")
+#read all_results.tsv, translate to "csv"
+bri <- read.table("all_results.tsv", header = T, sep = '\t', stringsAsFactors =F,check.names = F)
+write.csv(bri,"all_results.csv",row.names=TRUE)
+
+
+#-------------------way2(pathway)------------------------------------
+data1 <- as.data.frame(data$ABSI_WC)
+colnames(data1)<-"Group"
+data1$ID<- rownames(data)
+species_prev_filter$ID<- rownames(species_prev_filter)
+KW.p <- NULL
+
+for (i in 1:(ncol(species_prev_filter)-1)){
+  mer <- merge(species_prev_filter[,c(i,ncol(species_prev_filter))], data1, by = "ID")
+  g1 <- mer[mer$Group == 1, 2] #pick 
+  g2 <- mer[mer$Group == 2, 2]
+  #g3 <- mer[mer$Group == 3, 2]
+  #g4 <- mer[mer$ABSI_WC == 4, 2]
+  g1_not0 <- length(g1)-sum(g1==0)  # Determine the numbers of non-zero
+  g2_not0 <- length(g2)-sum(g2==0)
+  #g3_not0 <- length(g3)-sum(g3==0)
+  #g4_not0 <- length(g4)-sum(g4==0)
+  ##Non-zero output non-zero and median, etc.
+  KW.p$metabo[i] <- colnames(mer)[2]
+  KW.p$Q1_not0[i] <- g1_not0 
+  KW.p$Q2_not0[i] <- g2_not0
+  #KW.p$Q3_not0[i] <- g3_not0
+  #W.p$Q4_not0[i] <- g4_not0
+  KW.p$Q1_max[i] <- max(g1)
+  KW.p$Q1_mean[i] <- sum(g1)/length(g1)
+  KW.p$Q2_max[i] <- max(g2)
+  KW.p$Q2_mean[i] <- sum(g2)/length(g2)
+  #KW.p$Q3_max[i] <- max(g3)
+  #KW.p$Q3_mean[i] <- sum(g3)/length(g3)
+  #KW.p$Q4_max[i] <- max(g4)
+  #KW.p$Q4_mean[i] <- sum(g4)/length(g4)
+  
+  KW <- kruskal.test(mer[,2]~Group,data = mer)
+  KW.p$P[i] <- KW$p.value
+}
+
+#data1.frame
+p <- data.frame(KW.p)
+
+#ascending order of P value
+kw.fdr<- p[order(p[,which(colnames(p)=="P")]),]
+
+#p adjust
+FDR <- kw.fdr[,which(colnames(p)=="P")]
+FDR <- data.frame(p.adjust(FDR,method = "BH")) #we can change the method
+colnames(FDR) <- "FDR"
+kw.fdr <- cbind(kw.fdr,FDR)
+
+#save
+write.csv(kw.fdr, "KW1.csv",row.names = F)
+
+#-------------------way3(species)------------------------------------
+data1 <- as.data.frame(data$ABSI_WC)
+colnames(data1)<-"Group"
+data1$ID<- rownames(data)
+species_prev_filter$ID<- rownames(species_prev_filter)
+species_prev_filter <- merge(data1,species_prev_filter,by="ID")
+row.names(species_prev_filter) <- species_prev_filter$ID
+species_prev_filter <- species_prev_filter[,-grep("ID",colnames(species_prev_filter))]
+#Build a data box to store the results of permutation
+#Because the first one in the dataset is the grouping information, so ncol-1 was uesd to represent the number of variables
+permutated_result <- as.data.frame(array(dim = c((ncol(species_prev_filter)-1),1001)))
+
+colnames(permutated_result)[1] <- "ID"
+permutated_result$ID <- colnames(species_prev_filter)[2:ncol(species_prev_filter)]
+
+n <- c(1:(ncol(species_prev_filter)-1))
+p <- c(1:1000)
+set.seed(9999)
+for (i in n) {
+  #the first metabolic is in i+1 
+  data_temp <- species_prev_filter
+  for (j in p) {
+    data_temp[,i+1] <- sample(data_temp[,i+1])
+    a <- glm(Group~data_temp[,i+1],data = data_temp)
+    b <- summary(a)
+    c <- as.data.frame(coefficients(b))
+    #  t value or p value
+    d <- c[2,3]
+    #Temporary use t calue
+    permutated_result[i,j+1] <- d
+  }
+}
+#then calculate the t or p value of every metabolic
+raw_result <- as.data.frame(array(dim = c((ncol(species_prev_filter)-1),2)))
+colnames(raw_result)[1] <- "ID"
+colnames(raw_result)[2] <- "value"
+raw_result$ID <- colnames(species_prev_filter)[2:ncol(species_prev_filter)]
+n <- c(1:(ncol(species_prev_filter)-1))
+for (i in n) {
+  a <- glm(Group~species_prev_filter[,i+1],data = species_prev_filter)
+  b <- summary(a)
+  c <- as.data.frame(coefficients(b))
+  d <- c[2,3]
+  raw_result$value[i]<- d
+}
+# calculate FDR
+raw_result$permuteted_p <- NA
+n <- c(1:nrow(raw_result))
+for (i in n) {
+  freq <- length(which(abs(permutated_result[i,2:ncol(permutated_result)])>abs(raw_result$value[i])))/1000
+  raw_result$permuteted_p[i] <- freq
+}
+
+write.csv(raw_result,"permutation1.csv",row.names = F)
+
+
+#------------install packages "masslin"------------------------------------
+#method 1
+if (!requireNamespace("BiocManager", quietly = TRUE))
+  install.packages("BiocManager")
+BiocManager::install("Maaslin2")
+#method 2
+install.packages("devtools")
+library("devtools")
+install_github("biobakery/Maaslin2")
+#method 3 error:loading 'rlang' 0.4.12,but need >= 1.0.0
+remove.packages('rlang')
+remove.packages('Rcpp')
+install.packages('Seurat',dependencies=T,source=T)
+#-------------------------hjy--------------------------
