@@ -1,0 +1,160 @@
+#============================hjy==================================
+library(tidyverse)
+library(pheatmap)
+library(Hmisc)
+setwd("D:/JANE/SYSU/xmktz/data_analysis/analysis_ABSI") #?ļ?????·??
+metabolic <- read.csv("??л??1417.csv",row.names=1,check.names = F)
+metabolic_select<-read.csv("ɸѡ??л??.csv",check.names = F)
+rownames(metabolic_select)<- metabolic_select$met
+metabolic <-merge(metabolic_select,metabolic,by="row.names")
+rownames(metabolic)<-metabolic$Row.names
+metabolic$Row.names=NULL
+metabolic$met=NULL
+metabolic <- as.data.frame(t(metabolic))
+metabolic$ID <- rownames(metabolic)
+write.csv(metabolic,"ɸѡmetabolic.csv")
+
+data <- read.csv("Metadata.csv",check.names = F,row.names=1,fileEncoding = 'GBK')
+ABSI <- subset(data,select = c("ABSI"))
+rownames(ABSI) <- rownames(data)
+
+species <- read.csv("????species(permutation+LASSO).csv", header = T,sep = ",",check.names = F) 
+pathway <- read.csv("????pathway(permutation+LASSO).csv", header = T,sep = ",",check.names = F) 
+colnames(species)[1]<-"ID"
+mer <- merge(species,pathway,by="ID")
+mer <- merge(mer,metabolic,by="ID")
+metabolic <- metabolic[,1:ncol(metabolic)-1]
+write.csv(mer,file="??л??metabolic_selected.csv",row.names = FALSE)
+
+
+metabolic_selected <- read.csv("??л??metabolic_selected.csv",row.names=1,check.names = F)
+metabolic_selected_value <- data.frame(ID=NA,adj_R2=NA,p=NA)
+n <- c(22:(ncol(metabolic_selected)))
+for (i in n) {
+  temp <- metabolic_selected
+  a <- lm(temp[,i] ~ Absiella_dolichum+Anaerotignum_lactatifermentans+Bacteroides_sp_OM05_12+
+            Dialister_sp_CAG_357+Escherichia_coli+Fusobacterium_mortiferum+Megamonas_funiformis+
+            Parabacteroides_gordonii+Paraprevotella_xylaniphila+Ruminococcus_lactaris+
+            `P461-PWY`+`PROPFERM-PWY`+`PWY-3781`+`PWY-5154`+`PWY-6531`+
+            `PWY-6588`+`PWY-6590`+`PWY-7003`+`PWY-7196`+`PWY66-389`+`KETOGLUCONMET-PWY`,data = temp)
+  b <- summary(a)
+  ID <- colnames(temp)[i]
+  adj_R2 <- b$adj.r.squared
+  fvalue <- b$fstatistic
+  pvalue <- 1-pf(fvalue[1],fvalue[2],fvalue[3])
+  metabolic_selected_value_temp  <- data.frame(ID=ID,adj_R2=adj_R2,p=round(pvalue,3))
+  metabolic_selected_value <- rbind(metabolic_selected_value,metabolic_selected_value_temp)
+}
+metabolic_selected_value <- metabolic_selected_value[-1,]
+raw_table <- metabolic_selected_value
+
+#BHУ??------------------------------------------------------------------------------
+raw_table$padjust <- p.adjust(raw_table$p,method = "BH")
+
+write.csv(raw_table,"??л??metabolic_BH.csv",row.names = F)
+
+
+
+#### Calculate the permutation importance of p
+permutated_result <- as.data.frame(array(dim=c(ncol(metabolic),101)))#????
+colnames(permutated_result)[1] <- "ID"
+permutated_result$ID <- colnames(metabolic)
+n <- c(1:ncol(metabolic))
+p <- c(1:100)#ѭ??????
+######
+set.seed(9999)
+for (i in n) {
+  temp <- metabolic_selected
+  for (j in p){
+    temp_permutated <- temp
+    temp_permutated[,i+21] <- sample(temp_permutated[,i+21])
+    a <- lm(temp_permutated[,i+21] ~ Absiella_dolichum+Anaerotignum_lactatifermentans+Bacteroides_sp_OM05_12+
+            Dialister_sp_CAG_357+Escherichia_coli+Fusobacterium_mortiferum+Megamonas_funiformis+
+            Parabacteroides_gordonii+Paraprevotella_xylaniphila+Ruminococcus_lactaris+
+            `P461-PWY`+`PROPFERM-PWY`+`PWY-3781`+`PWY-5154`+`PWY-6531`+
+            `PWY-6588`+`PWY-6590`+`PWY-7003`+`PWY-7196`+`PWY66-389`+`KETOGLUCONMET-PWY`,data = temp_permutated)
+    b <- summary(a)
+    fvalue <- b$fstatistic
+    pvalue <- 1-pf(fvalue[1],fvalue[2],fvalue[3])
+    permutated_result[i,j+1]<-pvalue
+    }
+  }
+
+write.csv(permutated_result,"??л??permutated.csv",row.names = F)
+
+metabolic_permutated <- read.csv("??л??permutated.csv", row.names = 1,header = T,sep = ",",check.names = F) 
+metabolic_selected_value$FDR <- NA
+n <- c(1:nrow(metabolic_permutated))
+for (i in n) {
+  freq <- length(which(abs(metabolic_permutated[i,])<abs(raw_table$p[i])))/100
+  metabolic_selected_value$FDR[i] <- freq
+}
+#### set the FDR at 0.01
+species_diff <- metabolic_selected_value[which(metabolic_selected_value$FDR<0.05),]
+
+#===============================experience===============================
+#species_diff <- metabolic_selected_value[which(metabolic_selected_value$adj_R2>0.05),]
+
+
+write.csv(species_diff,"??л??metabolic_permutation.csv",row.names = F)
+
+metabolic <- read.csv("????metabolicɸѡ.csv", header = T,sep = ",",check.names = F) 
+metabolic_raw_table <- read.csv("??л??1417.csv", sep = ",",header = T,stringsAsFactors =F, check.names = F) 
+colnames(metabolic_raw_table)[1] <- "ID"
+metabolic <-as.data.frame(t(merge(metabolic,metabolic_raw_table,by="ID")))
+colnames(metabolic) <-metabolic[1,]
+metabolic <- metabolic[-1,]
+write.csv(metabolic,file="????metabolic(lm).csv",row.names = T)
+
+#===============================spearman===============================
+metabolic<-read.csv("????metabolic(lm).csv",row.names = 1)
+merge<-merge(ABSI,metabolic,by="row.names")
+rownames(merge)<-merge$Row.names
+merge$Row.names=NULL
+cor <- merge
+cor_test <- rcorr(as.matrix(cor),type = "spearman") 
+r_corr_clinic_abundance_spearman <- cor_test$r
+p_corr_clinic_abundance_spearman <- cor_test$P
+
+p_corr_clinic_abundance_spearman_sig <- 
+  p_corr_clinic_abundance_spearman[2:nrow(p_corr_clinic_abundance_spearman),1]
+r_corr_clinic_abundance_spearman_sig <- 
+  as.data.frame(r_corr_clinic_abundance_spearman[2:nrow(r_corr_clinic_abundance_spearman),1])
+
+p_fdr_corr_clinic_abundance_spearman_sig <- p.adjust(p_corr_clinic_abundance_spearman_sig,"fdr")
+dim(p_fdr_corr_clinic_abundance_spearman_sig) <- c(nrow(p_corr_clinic_abundance_spearman_sig),ncol(p_corr_clinic_abundance_spearman_sig))
+p_corr_clinic_abundance_spearman_sig <- as.data.frame(p_corr_clinic_abundance_spearman_sig)
+p_fdr_corr_clinic_abundance_spearman_sig <- as.data.frame(p_fdr_corr_clinic_abundance_spearman_sig)
+
+pheatmap_data_r <- t(r_corr_clinic_abundance_spearman_sig)
+pheatmap_data_p <- t(p_corr_clinic_abundance_spearman_sig)
+pheatmap_data_p_fdr <- t(p_fdr_corr_clinic_abundance_spearman_sig)
+
+cmt <- as.data.frame(t(pheatmap_data_r)) 
+pmt <- as.data.frame(t(pheatmap_data_p))
+pfdrmt <- as.data.frame(t(pheatmap_data_p_fdr))
+rownames(pfdrmt)<-rownames(pmt)
+pfdrmt$ID<-rownames(pfdrmt)
+spearman_metabolic<-merge(cmt,pmt,by="row.names")
+colnames(spearman_metabolic)[1]<-"ID"
+pfdrmt$ID<-rownames(pfdrmt)
+spearman_metabolic<-merge(spearman_metabolic,pfdrmt,by="ID")
+colnames(spearman_metabolic)[2]<-"r"
+colnames(spearman_metabolic)[3]<-"p"
+colnames(spearman_metabolic)[4]<-"fdr"
+write.csv(spearman_metabolic,file="spearman_metabolic.csv",row.names = F)
+
+
+#===============================spearman===============================
+spearman_metabolic<-read.csv("spearman_metabolic.csv",row.names = 1)
+fdr_metabolic <- spearman_metabolic[which(spearman_metabolic$fdr<0.05),]
+fdr_metabolic <- spearman_metabolic[which(abs(spearman_metabolic$r)>0.1),]
+metabolic<-as.data.frame(t(metabolic))
+aa<-merge(fdr_metabolic,metabolic,by="row.names")
+rownames(aa)<-aa$Row.names
+write.csv(aa,file="????metabolic_spearman.csv",row.names = T)
+aa<-aa[,5:ncol(aa)]
+aa<-as.data.frame(t(aa))
+write.csv(aa,file="????metabolic_origin.csv",row.names = T)
+
+#============================hjy==================================
