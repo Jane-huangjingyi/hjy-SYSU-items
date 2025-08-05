@@ -1,0 +1,38 @@
+#------------hjy-------------------
+library(Hmisc)
+library(pastecs)
+library(doBy)
+setwd("D:/JANE/SYSU/xmktz/data_analysis/analysis_ABSI") 
+data <- read.csv("Metadata.csv",check.names = F,row.names=1,fileEncoding = 'GBK')
+
+summary(data$Sex)
+describe(data)
+stat.desc(data$Age,basic = TURE,desc = TURE,norm ==FALSE,p=0.95)
+
+p<-summary(a3)$coefficients[,4]
+wald<-summary(a3)$coefficients[,3]^2
+valueB<-coef(a3)
+valueOR<-exp(coef(a3))
+confitOR<-exp(confint(a3))
+
+logistics_a3 <-data.frame(
+  B=round(valueB,3),
+  Wald=round(wald,3),
+  OR_with_CI=paste(round(valueOR,3),"(",
+                   round(confitOR[,1],3),"~",round(confitOR[,2],3),")",sep=""),
+  P=format.pval(p,digits = 3,eps=0.001))
+
+#group=========================================================================================
+myresult1 <- summaryBy(var1 + var2  + var3 +var4 ~ groupvar1 ,data = data1, id=NULL,mean)
+# 把结果存储在myresults1中，该结果是一个数据表。
+
+myresult2 <- summaryBy ( .  ~  groupvar2 + groupvar4,data = data1, id=NULL,var)
+# . 代表所有变量
+
+fun1 <- function(x){
+  c(m=mean(x, na.rm=TURE), v=var(x, na.rm=TURE),q=quantile(x, na.rm=TURE), md = median(x, na.rm=TURE) ,l=length(x),sd = sd(x,na.rm = TURE))
+}
+# 先定义我们需要的描述性统计量函数summaryBy(var1 + var2  + var3 +var4 ~ groupvar1 ,data = data1, FUN= fun1)
+
+
+#------------hjy-------------------
