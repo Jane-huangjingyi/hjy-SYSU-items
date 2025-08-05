@@ -1,0 +1,55 @@
+setwd("D:/JANE/SYSU/xmktz/data_analysis/analysis_ABSI") 
+species <- read.csv("species_1415.csv",check.names = F)
+
+rm(list=ls())
+pacman::p_load(tidyverse,microeco,magrittr)
+
+feature_table <- read.csv('feature_table.csv', row.names = 1)
+sample_table <- read.csv('sample_table.csv', row.names = 1)
+tax_table <- read.csv('tax_table.csv', row.names = 1)
+
+head(feature_table)[1:6,1:6]; head(sample_table)[1:6, ]; head(tax_table)[,1:6]
+
+# 创建microtable对象
+dataset <- microtable$new(sample_table = sample_table,
+                          otu_table = feature_table, 
+                          tax_table = tax_table)
+dataset
+#------------------------------------------------------------------------------
+# 加载 progress 包
+library(progress)
+
+# 创建一个进度条
+pb <- progress_bar$new(total = 100, format = "[:bar] :percent")
+
+# 使用 lapply 执行任务
+result <- lapply(1:100, function(x) {
+  Sys.sleep(0.1)  # 模拟工作负载
+  pb$tick()  # 更新进度条
+  lefse <- trans_diff$new(dataset = dataset, 
+                          method = "lefse", 
+                          group = "Group", 
+                          alpha = 0.01, 
+                          lefse_subgroup = NULL)
+})
+# 执行lefse分析
+lefse <- trans_diff$new(dataset = dataset, 
+                        method = "lefse", 
+                        group = "Group", 
+                        alpha = 0.01, 
+                        lefse_subgroup = NULL)
+# 查看分析结果
+head(lefse$res_diff)
+
+# 创建microtable对象
+dataset <- microtable$new(sample_table = sample_table,
+                          otu_table = feature_table, 
+                          tax_table = tax_table)
+dataset
+
+# 创建microtable对象
+dataset <- microtable$new(sample_table = sample_table,
+                          otu_table = feature_table, 
+                          tax_table = tax_table)
+dataset
+
