@@ -1,0 +1,41 @@
+library(ggplot2)
+library(ggpubr)
+library(ggpmisc)
+theme_set(ggpubr::theme_pubr()+
+            theme(legend.position = "top"))
+library(tidyverse)
+library(pheatmap)
+library(Hmisc)
+setwd("D:/JANE/SYSU/xmktz/data_analysis/analysis_ABSI") 
+species <- as.data.frame(t(read.csv("species_1419.csv", header = T, row.names = 1, sep = ",",check.names = F)))
+pathway <- as.data.frame(t(read.csv("pathway_1419.csv", header = T, row.names = 1, sep = ",",check.names = F)))
+metabolic <- read.csv("筛选metabolic.csv", header = T, row.names = 1, sep = ",",check.names = F) 
+clinical<- read.csv("clinical_data.csv", header = T, row.names = 1, sep = ",",check.names = F) 
+merge<-merge(clinical,pathway,by="row.names")
+
+#----------------------spearman----------------------------------
+b <- ggplot(merge, aes(x =ABSI , y =B309))
+# Add a loess smoothed fit curve
+b + geom_point(colour="#4b9ed2",size=0.5)+
+  geom_smooth(method = "lm", color = "#4b9ed2", fill = "#b7d8ed",se = TRUE)+
+  stat_cor(method = "spearman", 
+           label.x = 0.05, label.y = 0.01)#+labs(x="Species score (*100)")
+
+
+
+
+
+
+
+
+#----------------------spearman---------------------------------
+pathway_lm <- read.csv("pathway_lm_score.csv", header = T, row.names = 1, sep = ",",check.names = F) 
+colnames(pathway_lm)[10] <- "score"
+b <- ggplot(pathway_lm, aes(x =score , y =ABSI))
+# Add a loess smoothed fit curve
+b + geom_point(colour="#4b9ed2",size=0.5)+
+  geom_smooth(method = "lm", color = "#4b9ed2", fill = "#b7d8ed",se = TRUE)+
+  stat_cor(method = "spearman", 
+           label.x = 0.005, label.y = 0.06)+
+  labs(x="Pathway score (*100)")
+
