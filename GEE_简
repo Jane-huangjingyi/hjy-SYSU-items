@@ -1,0 +1,85 @@
+library(geepack)
+#### Pathway setting
+setwd("D:/JANE/SYSU/xmktz/data_analysis/analysis_Anserine/0. 数据处理")
+data_new <- read.csv("GEE_ITT0.csv")
+data_new$group <- factor(data_new$group,levels=c("3","1"))
+data_new$time <- factor(data_new$time,levels=c("0","1","2","3"))#
+
+#时间===========================================================================
+options(scipen=200)
+geeglm0<- geeglm(GGT~ baseline_GGT+time, id = id, corstr = "ar1", 
+                 family = "gaussian", data = data_new, subset = (group == 1))#group2=1or3
+summary(geeglm0)
+#anova(geeglm0)
+cc0 <- coef(summary(geeglm0))
+citab0 <- with(as.data.frame(cc0),
+               cbind(
+                 Estimate,
+                 lwr=Estimate-1.96*Std.err,
+                 upr=Estimate+1.96*Std.err))
+rownames(citab0) <- rownames(cc0)
+citab0
+
+#ITT_group=====================================================================
+options(scipen=200)
+geeglm1 <- geeglm(GGT ~ baseline_GGT+group*time, 
+                  id = id, corstr = "ar1",family = "gaussian", data = data_new)
+#geeglm2 <- geeglm(uua ~ baseline_uua+group*time +sex+age+BL_BMI, id = id, corstr = "ar1",family = "gaussian", data = data_new)
+#geeglm3 <- geeglm(uua ~ baseline_uua+group*time +sex+age+BL_BMI +BL_DD+BL_smoke+BL_alcohol+BL_soup+BL_MET ,id = id, corstr = "ar1", family = "gaussian", data = data_new)
+geeglm <- geeglm1
+summary(geeglm)
+cc <- coef(summary(geeglm))
+citab <- with(as.data.frame(cc),
+              cbind(
+                Estimate,
+                lwr=Estimate-1.96*Std.err,
+                upr=Estimate+1.96*Std.err))
+rownames(citab) <- rownames(cc)
+citab
+
+
+#activity_food #================================================================
+library(geepack)
+data_new <- read.csv("GEE_activity_food.csv")
+data_new$group <- factor(data_new$group,levels=c("3","1"))
+data_new$time <- factor(data_new$time,levels=c("0","3"))
+options(scipen=200)
+#data_new$Vit.B1
+geeglm0 <- geeglm(Vit.C ~ baseline_Vit.C+group*time, 
+                  id = id, corstr = "ar1",family = "gaussian", data = data_new)
+summary(geeglm0)
+#anova(geeglm0)
+cc0 <- coef(summary(geeglm0))
+citab0 <- with(as.data.frame(cc0),
+               cbind(
+                 Estimate,
+                 lwr=Estimate-1.96*Std.err,
+                 upr=Estimate+1.96*Std.err))
+rownames(citab0) <- rownames(cc0)
+lwr_upr <-citab0
+
+#===============================================================================
+
+#subgroups2=====================================================================
+library(geepack)
+#### Pathway setting
+setwd("D:/JANE/SYSU/xmktz/data_analysis/analysis_Anserine/0. 数据处理")
+data_new <- read.csv("GEE_ITT0.csv")
+#data_new <- data_new[-which(data_new$group2=="3"),]
+data_newgroup2 <- factor(data_newgroup2,levels=c("2","1"))
+data_new$time <- factor(data_new$time,levels=c("0","3"))#"1","2",
+
+data_new <- data_new[which(data_new$group=="1"),] #group 1,3
+options(scipen=200)
+geeglm1 <- geeglm(FEUA ~ baseline_FEUA+group_FEUA*time, 
+                  id = id, corstr = "ar1",family = "gaussian", data = data_new)
+geeglm <- geeglm1
+summary(geeglm)
+cc <- coef(summary(geeglm))
+citab <- with(as.data.frame(cc),
+              cbind(
+                Estimate,
+                lwr=Estimate-1.96*Std.err,
+                upr=Estimate+1.96*Std.err))
+rownames(citab) <- rownames(cc)
+citab
