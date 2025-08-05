@@ -1,0 +1,146 @@
+#### Pathway setting
+setwd("D:/JANE/SYSU/xmktz/data_analysis/analysis_Anserine/0. 数据处理")
+library(geepack)
+data_new <- read.csv("GEE_ITT0.csv")
+data_new$group <- factor(data_new$group,levels=c("3","1"))
+data_new$time <- factor(data_new$time,levels=c("0","3"))#"1","2",
+options(scipen=200)
+geeglm1 <- geeglm(FEUA ~ baseline_FEUA+group*time, 
+                  id = id, corstr = "ar1",family = "gaussian", data = data_new)
+geeglm2 <- geeglm(FEUA ~ baseline_FEUA+group*time +sex+age+BL_BMI, 
+                  id = id, corstr = "ar1",family = "gaussian", data = data_new)
+geeglm3 <- geeglm(FEUA ~ baseline_FEUA+group*time +sex+age+BL_BMI +BL_DD+BL_smoke+BL_alcohol+BL_soup+BL_MET ,
+                  id = id, corstr = "ar1", family = "gaussian", data = data_new)
+geeglm <- geeglm3
+summary(geeglm)
+cc <- coef(summary(geeglm))
+citab <- with(as.data.frame(cc),
+              cbind(
+                Estimate,
+                lwr=Estimate-1.96*Std.err,
+                upr=Estimate+1.96*Std.err))
+rownames(citab) <- rownames(cc)
+citab
+#时间===========================================================================
+setwd("D:/JANE/SYSU/xmktz/data_analysis/analysis_Anserine/0. 数据处理")
+library(geepack)
+data_new <- read.csv("GEE_ITT0.csv")
+#data_new <- data_new[which(data_new$group2=="2"),]
+#data_new$group <- factor(data_new$group,levels=c("3","1"))
+data_new$time <- factor(data_new$time,levels=c("0","3"))#"1","2",
+options(scipen=200)
+geeglm0<- geeglm(FEUA~ baseline_FEUA+time, id = id, corstr = "ar1", 
+                 family = "gaussian", data = data_new, subset = (group == 1))
+summary(geeglm0)
+#anova(geeglm0)
+cc0 <- coef(summary(geeglm0))
+citab0 <- with(as.data.frame(cc0),
+               cbind(
+                 Estimate,
+                 lwr=Estimate-1.96*Std.err,
+                 upr=Estimate+1.96*Std.err))
+rownames(citab0) <- rownames(cc0)
+citab0
+
+#---------------------------------------------------------------------
+#subgroups
+#data_new <- data_new[which(data_new$group=="3"),]
+#data_new <- data_new[which(data_new$group2=="2"),]
+#data_new <- data_new[-which(data_new$group2=="3"),]
+#data_new$group2 <- factor(data_new$group2,levels=c("1","2"))#
+#data_new <- data_new[which(data_new$time=="1"),]
+#data_new <- data_new[-which(data_new$time=="3"),]
+#主效应（多组时间数据）=========================================================
+geeglm1 <- geeglm(uua ~ baseline_ua+group*time, 
+                  id = id, corstr = "ar1",family = "gaussian", data = data_new)
+geeglm2 <- geeglm(uua ~ baseline_ua+group*time +sex+age+BL_BMI, 
+                  id = id, corstr = "ar1",family = "gaussian", data = data_new)
+geeglm3 <- geeglm(uua ~ baseline_ua+group*time +sex+age+BL_BMI +BL_DD+BL_smoke+BL_alcohol+BL_soup+BL_MET ,
+                  id = id, corstr = "ar1", family = "gaussian", data = data_new)
+
+geeglm <- geeglm1
+summary(geeglm)
+cc <- coef(summary(geeglm))
+citab <- with(as.data.frame(cc),
+              cbind(
+                Estimate,
+                lwr=Estimate-1.96*Std.err,
+                upr=Estimate+1.96*Std.err))
+rownames(citab) <- rownames(cc)
+citab
+
+#主效应2（一组时间数据）========================================================
+geeglm1 <- geeglm(uua ~ baseline_uua+group, 
+                  id = id, corstr = "ar1",family = "gaussian", data = data_new)
+geeglm2 <- geeglm(uua ~ baseline_uua+group +sex+age+BL_BMI, 
+                  id = id, corstr = "ar1",family = "gaussian", data = data_new)
+geeglm3 <- geeglm(uua ~ baseline_uua+group +sex+age+BL_BMI +BL_DD+BL_smoke+BL_alcohol+BL_soup+BL_MET,
+                  id = id, corstr = "ar1", family = "gaussian", data = data_new)
+
+geeglm <- geeglm1
+summary(geeglm)
+cc <- coef(summary(geeglm))
+citab <- with(as.data.frame(cc),
+              cbind(
+                Estimate,
+                lwr=Estimate-1.96*Std.err,
+                upr=Estimate+1.96*Std.err))
+rownames(citab) <- rownames(cc)
+citab
+#anova(geeglm1)
+
+#率差===========================================================================
+p1 <- 0.333
+p2 <- 0.188
+n1 <- 15
+n2 <- 16
+estimate0 <- 1.96*sqrt((p1*(1-p1)/n1)+(p2*(1-p2)/n2))
+(p1-p2)*100
+(p1-p2-estimate0)*100
+(p1-p2+estimate0)*100
+
+
+
+#GEE_ITT_activity_food #
+data_new <- read.csv("GEE_ITT_activity_food.csv")
+data_new$group <- factor(data_new$group,levels=c("3","1"))
+data_new$time <- factor(data_new$time,levels=c("0","3"))#
+options(scipen=200)
+geeglm0<- geeglm(energy~ time, id = ID, corstr = "ar1", 
+                 family = "gaussian", data = data_new, subset = (group == 1))
+summary(geeglm0)
+#anova(geeglm0)
+cc0 <- coef(summary(geeglm0))
+citab0 <- with(as.data.frame(cc0),
+               cbind(
+                 Estimate,
+                 lwr=Estimate-1.96*Std.err,
+                 upr=Estimate+1.96*Std.err))
+rownames(citab0) <- rownames(cc0)
+citab0
+
+#干预===========================================================================
+data_new$time <- relevel(data_new$time, ref = 1)
+geeglm2_1 <- geeglm(uua ~ baseline_ua + sex + age + group * time, id = id, corstr = "ar1", 
+                    family = "gaussian", data = data_new)
+summary(geeglm2_1)
+data_new$time <- relevel(data_new$time, ref = 2)
+geeglm2_2 <- geeglm(uua ~ baseline_ua + sex + age + group * time, id = id, corstr = "ar1", 
+                    family = "gaussian", data = data_new)
+summary(geeglm2_2)
+data_new$time <- relevel(data_new$time, ref = 3)
+geeglm2_3 <- geeglm(uua ~ baseline_ua + sex + age + group * time, id = id, corstr = "ar1", 
+                    family = "gaussian", data = data_new)
+summary(geeglm2_3)
+#交互
+lapply(list(geeglm2_1, geeglm2_2, geeglm2_3),anova)
+
+
+# 方程==========================================================================
+fit1 <- geeglm(y ~ time*group + age + BMI,id = ID, corstr = "ar1", 
+               family = "gaussian", data = data,std.err = 'san.se')
+# 不同分层
+emm1 <- emmeans(fit1, pairwise ~ time|group, adjust = "bonf")
+emm2 <- emmeans(fit1, pairwise ~ group|time, adjust = "bonf")
+# 显示置信区间
+con1 <-confint(emm1)#显示置信区间
