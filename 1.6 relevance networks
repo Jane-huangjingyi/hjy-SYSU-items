@@ -1,0 +1,233 @@
+library("randomForest")
+library("caret")
+library("ggpubr")
+library("rfPermute")
+library("Boruta")
+library("reshape2")
+library("relaimpo")
+library("psych")
+library("pheatmap")
+
+setwd("D:/JANE/SYSU/xmktz/data_analysis/analysis_ABSI") 
+
+species <- read.csv("species_1419.csv",check.names = F)
+choose <-read.csv("差异species筛选25.csv",check.names = F)
+merge <- merge(species,choose,by="ID")
+#merge<-species
+row.names(merge) <- merge[,1]
+species <- as.data.frame(t(merge[,-1]))#_normal#abdominal_obesity
+data <- read.csv("Metadata.csv",check.names = F,row.names=1,fileEncoding = 'GBK')
+ABSI <- subset(data,select = c("ABSI"))
+rownames(ABSI) <- rownames(data)
+species <- merge(species,ABSI,by="row.names")
+row.names(species) <- species[,1]
+species <- species[,-1]
+
+#---------------------------------------------------------------------------------
+#### Calculate the permutation importance of p
+permutated_result <- as.data.frame(array(dim = c((ncol(species)),1002)))
+list <- c(1:ncol(species))
+n <- c(1:ncol(species))
+round <- c(1:100)#循环次数
+set.seed(9999)
+for (j in list) {
+  for (i in n) {
+    raw_p <- as.numeric(cor.test(species[,i],species[,j],method = "spearman")$p.value)
+    rho <- as.numeric(cor.test(species[,i],species[,j],method = "spearman")$estimate)
+    list2 <- c()
+    for (e in round) {
+      data_temp <- species[,1:ncol(species)]
+      data_temp[,i] <- sample(data_temp[,i])
+      permutated_result[(j-1)*ncol(species)+i,1] <- colnames(data_temp)[j]
+      permutated_result[(j-1)*ncol(species)+i,2] <- colnames(data_temp)[i]
+      p_val <- as.numeric(cor.test(data_temp[,i],data_temp[,j],method = "spearman")$p.value)
+      list2 <- append(list2,p_val)
+          }
+    permutated_value <- length(which(list2<raw_p))/length(round)
+    permutated_result[(j-1)*ncol(species)+i,5] <- permutated_value
+    permutated_result[(j-1)*ncol(species)+i,4] <- raw_p
+    permutated_result[(j-1)*ncol(species)+i,3] <- rho
+  }
+}
+
+spearman2 <- permutated_result[,1:5]
+colnames(spearman2)[1]<-"Data1"
+colnames(spearman2)[2]<-"Data2"
+colnames(spearman2)[3]<-"rho"
+colnames(spearman2)[4]<-"raw_p"
+colnames(spearman2)[5]<-"permutated_value"
+spearman2 <- spearman2[-which(spearman2$rho>0.99),]
+spearman2 <- spearman2[order(spearman2$permutated_value),]
+spearman2$relation[which(spearman2$rho<0)] <- "negative"
+spearman2$relation[which(spearman2$rho>0)] <- "positive"
+write.csv(spearman2,"网络图_abdominal_obesity_25.csv",row.names=TRUE)
+#_normal#abdominal_obesity
+#===============================================================================
+#===============================================================================
+
+spearman <- as.data.frame(array(dim = c(1,4)))
+colnames(spearman) <- c("Data1","Data2","rho","p")
+#---------------------------------------------------------------------------------
+list <- c(1:10)
+n <- c(1:10)
+for (j in list) {
+  for (i in n) {
+    a <- cor.test(species[,j],species[,i],method = "spearman")
+    Data1 <- colnames(species)[j]
+    Data2 <- colnames(species)[i]
+    rho <- a$estimate
+    p <- a$p.value
+    temp <- data.frame(Data1=Data1,Data2=Data2,rho=rho,p=p)
+    spearman <- rbind(spearman,temp)
+  }
+}
+spearman1 <- spearman[-1,]
+spearman <- spearman1
+#---------------------------------------------------------------------------------
+spearman <- spearman[-which(spearman$rho> 0.99),]
+spearman <- spearman[order(spearman$p),]
+spearman$fdr <- p.adjust(spearman$p,method = "BH")#这里可以调整
+
+spearman$relation[which(spearman$rho>0)] <- "positive"
+spearman$relation[which(spearman$rho<0)] <- "negative"
+write.csv(spearman,"网络图_normal_多.csv",row.names=TRUE)
+
+
+
+
+
+#===============================================================================
+#===============================================================================
+library("DGCA")
+#darmanis这个数据框就是菌群的数据框，转置后每一个列名是菌名
+darmanis <- as.data.frame(t(darmanis))
+design_mat <- as.matrix(design_mat)
+ddcor_res = ddcorAll(inputMat = darmanis, design = design_mat, compare = c("smoking", "healthy"))
+#===============================================================================
+#===============================================================================
+
+
+#计算中心
+library(igraph)
+
+m <- spearman
+#创建一个有向图
+g <- make_graph(t(m[,1:2]),directed = TRUE)
+#创建一个无向图
+g <- make_graph(t(m[,1:2]),directed = FALSE)
+
+plot(g)
+
+# ---------------------------------
+# -------    一、中心度   ---------
+# ---------------------------------
+
+# ------- 1.点度中心??? degree---------
+## mode=in点入度；out=点出度；total点度中心度，三者统称绝对点中心???
+a <- data.frame(degree(g,mode="in"))
+b <- data.frame(degree(g,mode="out"))
+c <- data.frame(degree(g,mode="total"))
+## 相对点中心度=绝对点中心度/最大度数（可以作为不同网络结构的比较，相对数与绝对数的区别???
+n <- data.frame(degree(g,normalized = T))
+
+degree <- cbind(a,b,c,n)
+colnames(degree) <- c("degree(in)","degree(out)","degree(total)","degree(normalized)")
+
+
+# ------ 2.接近中心??? closeness------
+## 某点四周的接近中心度，mode="out"是有向图，默认是无向图为in
+## 设置normalized = T为相对接近中心度
+cl <- data.frame(closeness(g,vids=V(g),mode = "total"))
+
+colnames(cl) <- "closeness"
+degree <- cbind(degree,cl)
+
+
+# ------ 3.点的中心??? betweenness------
+##n ormalized = T代表相对数，默认值为F为绝对???
+## mode有Out和in分别代表有向和无???
+be <- data.frame(betweenness(g,normalized = T,directed = F)*100)
+
+colnames(be) <- "betweenness(%)"
+degree <- cbind(degree,be)
+
+
+# ------ 4.线的中间中心??? edge.betweenness------  ##一般可不计算这个！！！
+## normalized = T代表相对数，默认值为F为绝对???
+## mode有Out和in分别代表有向和无???
+E(g)$weight <- edge.betweenness(g)#,directed = F
+edge <- data.frame(edge.betweenness(g))#,directed = F
+colnames(edge) <- "weight(betweenness_nodirect)"
+m <- cbind(m,edge)
+write.csv(m,"degree.csv")
+
+## 返回某条线的中间中心???(e就代表起点，终点的线)
+edge.betweenness(g,e=E(g,path=c(which(V(g)$label=="a"),which(V(g)$label=="c"))))
+
+
+# ------ 5.点的特征向量中心??? evcent------
+## scale=F没有归一化，T代表输出数据进行标准???
+## mode有Out和in分别代表有向和无???
+evcent <- data.frame(evcent(g,scale = T,directed = F)$vector) 
+
+colnames(evcent) <- "evcent(normalized)"
+degree <- cbind(degree,evcent)
+
+write.csv(degree,"degree.csv" )
+
+
+# ---------------------------------
+# -------    二、中心势   ---------
+# ---------------------------------
+
+# ------ 1.网络聚类系数 transitivity------
+##衡量网络中关联性如何，值越大代表交互关系越大。说明网络越复杂，越能放在一块儿，聚???
+transitivity(g)
+
+# ------ 2.网络密度 graph.density------
+##形容网络的结构复杂程度。越大，说明网络越复杂，说明网络越能够放在一???
+graph.density(g)
+
+
+# ---------------------------------
+# ------    三、社群规???   --------
+# ---------------------------------
+
+# ------ 1.基于点连接的社群发现 clusters------
+## mode是用来选择强关联还是弱关联，weak or strong
+clusters(g,mode="weak")
+
+# ------ 2.随机游走的社群发???------
+## weight代表线权重，默认就是E(g)$label;step代表游走步长，越大代表分类越粗糙，分类类别越小。默认为4
+member<-walktrap.community(g,weights=E(g)$weight,step=4)
+
+# ------ 3.自旋玻璃社群发现 ------
+## weight代表线权重，但是与随机游走不同，其要自己赋上去，weight=E(g)$label不能???
+## spins代表产生的社群数，默认值为25???
+## 这个社群分类函数有了自己定义分类数量的效???
+member<-spinglass.community(g,weights=E(g)$weight,spins=2)
+
+# ------ 4.中间中心度社群发??? ------
+## 有默认的线权重，并且默认是无向线的，directed=T时就代表有向???
+member<-edge.betweenness.community(g,weight=E(g)$weight,directed=F)
+
+# ------ 5.传播标签社群发现 ------
+## initial是社群初始化函数，默认为-1（不设置初始值），当然这里你也可以设置；如initial=c(1,1,-1,-1,2)就代???1,2个数为社???1???3???4不设置初始值；5个为社群2
+## fixed是用来固定函数的，当然如果没有设定初始值，???3.4.6则T，F都无效；如果设定了初始值，T则代表固定在原设定上
+member<-label.propagation.community(g,weights=V(g)$weight)
+V(g)$member
+member<-label.propagation.community(g.undir,weights = E(g.undir)$weight,initial = c(1,1,-1,-1,2,-1,1))
+V(g.undir)$member
+member<-label.propagation.community(g.undir,weights = E(g.undir)$weight,
+                                    initial = c(1,1,-1,-1,2,-1,1),fixed=c(T,F,F,F,F,F,T))
+
+# ------ 6.绘图 ------
+plot.membership<-function(graph,membership,main=""){
+  V(graph)$member<-membership
+  mem.col<-rainbow(length(unique(membership)),alpha=0.3)
+  V(graph)$color<-mem.col[membership]
+  plot(graph,edge.width=E(graph)$weight,vertex.color=V(graph)$color,main=main)
+}
+
+plot.membership(g,clusters(g)$membership,"无向图的社群发现")
+plot.membership(g,member$membership,"无向图的社群发现")
