@@ -6,7 +6,7 @@ library(export)
 library(ComplexHeatmap)
 library(wordcloud2)
 
-setwd("D:/JANE/SYSU/xmktz/data_analysis/analysis_ABSI") 
+setwd("  ") 
 
 #--------------------------------------------------------------
 species <- read.csv("差异species(permutation).csv", header = T,row.names=1,sep = ",",check.names = F)
@@ -44,7 +44,7 @@ r_corr_clinic_abundance_spearman_sig <-
   as.data.frame(r_corr_clinic_abundance_spearman[(u+1):nrow(r_corr_clinic_abundance_spearman),1:u])
 
 #permutation校正
-permutated_p <- as.data.frame(array(dim = c(nrow(p_corr_clinic_abundance_spearman)-u,u)))
+permutated_p <- as. data.frame(array(dim = c(nrow(p_corr_clinic_abundance_spearman)-u,u)))
 rownames(permutated_p) <- rownames(p_corr_clinic_abundance_spearman_sig)
 colnames(permutated_p) <- colnames(p_corr_clinic_abundance_spearman_sig)
 n <- c(1:u)
@@ -107,7 +107,7 @@ annotation$Association_with_body_shape <- NA
 n <- c(1:ncol(species))
 species1 <- merge(ABSI,species,by="row.names")
 rownames(species1) <-species1[,1]
-species1 <-as.data.frame(species1[,3:ncol(species1)])
+species1 <-as. data.frame(species1[,3:ncol(species1)])
 for (i in n) {
   r <- as.numeric(cor.test(ABSI$ABSI,species1[,i],method = "spearman")$estimate)
   annotation$r[i]<-r
