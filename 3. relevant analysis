@@ -1,8 +1,8 @@
 #-----------------hjy--------------------------------
-setwd("D:/JANE/SYSU/xmktz/data_analysis/analysis_ABSI") 
+setwd(" ") 
 metadata <- read.csv("Metadata.csv",row.names = 1,check.names = F,fileEncoding = 'GBK')
-ABSI_list <- subset(metadata,select = c("ABSI","Age","Sex","activity_grade","alcohol","smoke","DD","Chronic_disease"))
-species <- read.csv("????species(permutation+LASSO).csv", header = T,sep = ",",check.names = F,row.names = 1) 
+ABSI_list <- subset(metadata, select = c("ABSI", "Age", "Sex", "activity_grade", "alcohol", "smoke", "DD", "Chronic_disease"))
+species <- read.csv("  .csv", header = T,sep = ",",check.names = F,row.names = 1) 
 merge<- merge(ABSI_list,species,by="row.names")
 colnames(merge)[1] <- "ID"
 write.csv(merge,file="species_lm.csv",row.names = FALSE)
@@ -28,17 +28,18 @@ library("rsq")
 # Loading of group list and related metadata information
 metadata <- read.csv("Metadata.csv",row.names = 1,check.names = F,fileEncoding = 'GBK')
 species_raw_table <- read.csv("species_1419.csv",row.names = 1,check.names = F)
-species_raw_table <- as.data.frame(t(species_raw_table))
+species_raw_table <- as. data.frame(t(species_raw_table))
 species_raw_table <- species_raw_table[row.names(species_raw_table)%in%row.names(metadata),]
 # filtering
 species_prev_table <- species_raw_table
 
-#log
+#log  找到菌or直接match一下
 #species_prev_table <- log(species_prev_table+1,2)
 species_diff_table <- species_prev_table[,colnames(species_prev_table)%in%c("Bacteroides_sp_OM05_12","Escherichia_coli","Ruminococcus_lactaris",
                                                                             "Anaerotignum_lactatifermentans","Paraprevotella_xylaniphila","Megamonas_funiformis",
                                                                             "Absiella_dolichum","Dialister_sp_CAG_357",
                                                                             "Fusobacterium_mortiferum","Parabacteroides_gordonii")]
+
 
 ######
 species_diff_table <- merge(ABSI_list,species_diff_table,by="row.names")
@@ -69,7 +70,7 @@ rownames(merbb) <- merbb$ID
 merbb <- merbb[,2:ncol(merbb)]
 write.csv(merbb,"species_caculate_experience.csv")
 
-#-------------use the excel---------------------
+# ------------- the excel---------------------
 species<-species[,1:ncol(species)-1]
 species <- as.data.frame(t(species))
 lm <- read.csv("species_caculate_experience_lm.csv",check.names = F)
