@@ -1,5 +1,5 @@
 #### Pathway setting
-setwd("D:/JANE/SYSU/xmktz/data_analysis/analysis_Anserine/0. 数据处理")
+setwd("  ")
 library(geepack)
 data_new <- read.csv("GEE_ITT0.csv")
 data_new$group <- factor(data_new$group,levels=c("3","1"))
