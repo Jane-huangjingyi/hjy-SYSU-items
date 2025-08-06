@@ -1,6 +1,6 @@
 #------------------------------hjy-------------------------
 #### Pathway setting
-setwd("D:/JANE/SYSU/xmktz/data_analysis/analysis_ABSI")
+setwd(" ")
 
 #### Packages loading
 options("scipen"=999, "digits"=4)
@@ -22,7 +22,7 @@ permutated_results <- read.csv("permutated_results_ABSI_species.csv",check.names
 species_raw_table <- as.data.frame(t(species_raw_table))
 
 
-#### Calculate the permuated final p value based on permutation
+#### Calculate the permuted final p-value based on permutation
 two_stage_p_species$FDR <- NA
 two_stage_p_species_diff <- two_stage_p_species[two_stage_p_species$ID%in%colnames(permutated_results),]
 n <- c(1:nrow(two_stage_p_species_diff))
