@@ -1,5 +1,5 @@
 #------------------------------hjy--------------------------
-setwd("D:/JANE/SYSU/xmktz/data_analysis/analysis_ABSI") #文件所在路径
+setwd("  ") #文件所在路径
 #------------------读取归一化后的----------------------
 data <- read.csv("代谢物1417_归一化.csv", header = T, sep = ",", row.names=1 ,check.names = F)
 #进行归一化
@@ -16,10 +16,10 @@ data_scaled <- as.data.frame(data_scaled)
 #---------------------maaslin---------------------
 library(Maaslin2)
 group <- read.csv("Metadata.csv", header = T, row.names = 1, sep = ",", check.names = F)
-group$ABSI_group <- factor(group$ABSI_group,levels=c("1","2","3","4"))#1作为比较组
+group$ABSI_group <- factor(group$ABSI_group,levels=c("1", "2", "3", "4"))#1作为比较组
 fit_data <- Maaslin2(
   data, group , 'demo_output', transform = "AST",
-  fixed_effects = c('ABSI_group','Sex','Age'),
+  fixed_effects = c('ABSI_group', 'Sex', 'Age'),
   random_effects = c(''),
   normalization = 'NONE',
   standardize = FALSE)
@@ -61,7 +61,7 @@ for (i in n) {
   }
 }
 #然后计算原来各个代谢物他们的t值(也可以用p值)
-raw_result <- as.data.frame(array(dim = c((ncol(pri)-1),2)))
+raw_result <- as. data.frame(array(dim = c((ncol(pri)-1),2)))
 colnames(raw_result)[1] <- "ID"
 colnames(raw_result)[2] <- "value"
 raw_result$ID <- colnames(pri)[2:ncol(pri)]
@@ -69,7 +69,7 @@ n <- c(1:(ncol(pri)-1))
 for (i in n) {
   a <- glm(Group~pri[,i+1],data = pri)
   b <- summary(a)
-  c <- as.data.frame(coefficients(b))
+  c <- as. data.frame(coefficients(b))
   d <- c[2,3]
   raw_result$value[i]<- d
 }
