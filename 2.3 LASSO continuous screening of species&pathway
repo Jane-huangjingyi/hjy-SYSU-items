@@ -1,5 +1,5 @@
 #### Pathway setting
-setwd("D:/JANE/SYSU/xmktz/data_analysis/analysis_ABSI")
+setwd("  ")
 
 species_selected <- read.csv("associated_species_ABSI.csv", sep = ",",header = T,stringsAsFactors =F, check.names = F) 
 species_selected <- species_selected[,1:2]
@@ -34,7 +34,7 @@ for (i in n) {
 }
 #
 lasso_permutated <- lasso_permutated[-1,]
-lasso_select <- as.data.frame(array(dim = c(26,2)))#??
+lasso_select <- as. data.frame(array(dim = c(26,2)))#??
 colnames(lasso_select) <- c("ID","frequency")
 lasso_select$ID <- row.names(lasso_permutated)
 n <- c(1:nrow(lasso_permutated))
@@ -45,14 +45,14 @@ for (i in n) {
 write.csv(lasso_select, "LASSO_result_species_ABSI.csv",row.names = F)
 
 #-----------------?ϲ?---------------------------------------------
-species <- read.csv("????speciesɸѡ.csv", header = T,sep = ",",check.names = F) 
+species <- read.csv("  .csv", header = T,sep = ",",check.names = F) 
 species_raw_table <- read.csv("species_1419.csv", sep = ",",header = T,stringsAsFactors =F, check.names = F) 
 species <-as.data.frame(t(merge(species,species_raw_table,by="ID")))
 colnames(species) <-species[1,]
 species <- species[-1,]
 write.csv(species,file="????species(permutation+LASSO).csv",row.names = T)
 
-a <- read.csv("????species(permutation+LASSO).csv",row.names = 1)
+a <- read.csv("species(permutation+LASSO).csv",row.names = 1)
 b <- read.csv("clinical_data.csv",row.names = 1)
 merge<- merge(species,b,by="row.names")
 write.csv(merge,file="graphpad3.csv",row.names = F)
