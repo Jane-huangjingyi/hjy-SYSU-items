@@ -1,3 +1,4 @@
+#--------------------------hjy----------------------------
 library(ggplot2)
 library(ggpubr)
 library(ggpmisc)
@@ -6,7 +7,7 @@ theme_set(ggpubr::theme_pubr()+
 library(tidyverse)
 library(pheatmap)
 library(Hmisc)
-setwd("D:/JANE/SYSU/xmktz/data_analysis/analysis_ABSI") 
+setwd("  ") 
 species <- as.data.frame(t(read.csv("species_1419.csv", header = T, row.names = 1, sep = ",",check.names = F)))
 pathway <- as.data.frame(t(read.csv("pathway_1419.csv", header = T, row.names = 1, sep = ",",check.names = F)))
 metabolic <- read.csv("筛选metabolic.csv", header = T, row.names = 1, sep = ",",check.names = F) 
@@ -24,6 +25,7 @@ b + geom_point(colour="#4b9ed2",size=0.5)+
 
 
 
+#--------------------------hjy----------------------------
 
 
 
@@ -39,3 +41,4 @@ b + geom_point(colour="#4b9ed2",size=0.5)+
            label.x = 0.005, label.y = 0.06)+
   labs(x="Pathway score (*100)")
 
+#--------------------------hjy----------------------------
