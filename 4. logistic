@@ -1,7 +1,7 @@
 #---------------------------------------hjy--------------------------------------
-setwd("D:/JANE/SYSU/xmktz/data_analysis/analysis_ABSI") 
+setwd(" ") 
 data <- read.csv("Metadata.csv",check.names = F,fileEncoding = "GBK")
-group <- subset(data,select = c("ID","ABSI","ABSI_obesity","WC_obesity","Age","Sex","activity_grade","alcohol","smoke","DD","Chronic_disease"))
+group <- subset(data, select = c("ID", "ABSI ", "ABSI_obesity", "WC_obesity", "Age", "Sex", "activity_grade", "alcohol", "smoke", "DD", "Chronic_disease"))
 lm <- read.csv("species_caculate_experience_lm.csv",check.names = F)
 mer <- merge(lm,group,by="ID")
 
