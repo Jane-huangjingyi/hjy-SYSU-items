@@ -8,7 +8,7 @@ library("relaimpo")
 library("psych")
 library("pheatmap")
 
-setwd("D:/JANE/SYSU/xmktz/data_analysis/analysis_ABSI") 
+setwd(" ") 
 
 species <- read.csv("species_1419.csv",check.names = F)
 choose <-read.csv("差异species筛选25.csv",check.names = F)
@@ -25,7 +25,7 @@ species <- species[,-1]
 
 #---------------------------------------------------------------------------------
 #### Calculate the permutation importance of p
-permutated_result <- as.data.frame(array(dim = c((ncol(species)),1002)))
+permutated_result <- as. data.frame(array(dim = c((ncol(species)),1002)))
 list <- c(1:ncol(species))
 n <- c(1:ncol(species))
 round <- c(1:100)#循环次数
@@ -194,7 +194,7 @@ graph.density(g)
 # ---------------------------------
 
 # ------ 1.基于点连接的社群发现 clusters------
-## mode是用来选择强关联还是弱关联，weak or strong
+## mode是用来选择强关联还是弱关联， weak or strong
 clusters(g,mode="weak")
 
 # ------ 2.随机游走的社群发???------
