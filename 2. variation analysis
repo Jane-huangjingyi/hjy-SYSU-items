@@ -3,13 +3,13 @@
 library(Maaslin2)
 
 #read file
-setwd("D:/JANE/SYSU/xmktz/data_analysis/analysis_ABSI") #the pathway of file
+setwd("  ") #the pathway of file
 data <- read.csv("Metadata.csv",row.names = 1,check.names = F,fileEncoding = 'GBK')
 pri <- read.csv("species_1419.csv",row.names = 1,check.names = F)
-species_raw_table <- as.data.frame(t(pri))
+species_raw_table <- as. data.frame(t(pri))
 
 #### Prevalence filtering
-# Filter out species with the prevalence lower than 5%
+# Filter out species with a prevalence lower than 5%
 delete_list <- c()
 n <- c(1:ncol(species_raw_table))
 for (i in n) {
@@ -23,14 +23,14 @@ species_prev_filter <- species_raw_table[,-delete_list]
 #-------------------way1(species)------------------------------------
 #The following is data that forces a factor to be a categorical variable,
 #defined as a categorical variable, because if the grouping is"1,2,3",
-#the system considers it a continuous number,,
+#the system considers it a continuous number,
 #and all categorical factors require the following operation
 
 setwd("D:/JANE/SYSU/xmktz/data_analysis/analysis_ABSI") #the pathway of file
 data$ABSI_WC <- factor(data$ABSI_WC,levels=c("1","2"))#group 1 as control group
 fit_data <- Maaslin2(
   species_prev_filter ,data,  'demo_output', transform = "AST",
-  fixed_effects = c('ABSI_WC','Sex','Age'),
+  fixed_effects = c('ABSI_WC', 'Sex', 'Age'),
   random_effects = c(''),
   normalization = 'NONE',
   standardize = FALSE)
@@ -95,16 +95,16 @@ kw.fdr <- cbind(kw.fdr,FDR)
 write.csv(kw.fdr, "KW1.csv",row.names = F)
 
 #-------------------way3(species)------------------------------------
-data1 <- as.data.frame(data$ABSI_WC)
+data1 <- as. data.frame(data$ABSI_WC)
 colnames(data1)<-"Group"
 data1$ID<- rownames(data)
 species_prev_filter$ID<- rownames(species_prev_filter)
 species_prev_filter <- merge(data1,species_prev_filter,by="ID")
 row.names(species_prev_filter) <- species_prev_filter$ID
 species_prev_filter <- species_prev_filter[,-grep("ID",colnames(species_prev_filter))]
-#Build a data box to store the results of permutation
-#Because the first one in the dataset is the grouping information, so ncol-1 was uesd to represent the number of variables
-permutated_result <- as.data.frame(array(dim = c((ncol(species_prev_filter)-1),1001)))
+#Build a data box to store the results of the permutation
+#Because the first one in the dataset is the grouping information, so ncol-1 was used to represent the number of variables
+permutated_result <- as. data.frame(array(dim = c((ncol(species_prev_filter)-1),1001)))
 
 colnames(permutated_result)[1] <- "ID"
 permutated_result$ID <- colnames(species_prev_filter)[2:ncol(species_prev_filter)]
@@ -119,7 +119,7 @@ for (i in n) {
     data_temp[,i+1] <- sample(data_temp[,i+1])
     a <- glm(Group~data_temp[,i+1],data = data_temp)
     b <- summary(a)
-    c <- as.data.frame(coefficients(b))
+    c <- as. data.frame(coefficients(b))
     #  t value or p value
     d <- c[2,3]
     #Temporary use t calue
@@ -127,7 +127,7 @@ for (i in n) {
   }
 }
 #then calculate the t or p value of every metabolic
-raw_result <- as.data.frame(array(dim = c((ncol(species_prev_filter)-1),2)))
+raw_result <- as. data.frame(array(dim = c((ncol(species_prev_filter)-1),2)))
 colnames(raw_result)[1] <- "ID"
 colnames(raw_result)[2] <- "value"
 raw_result$ID <- colnames(species_prev_filter)[2:ncol(species_prev_filter)]
@@ -135,7 +135,7 @@ n <- c(1:(ncol(species_prev_filter)-1))
 for (i in n) {
   a <- glm(Group~species_prev_filter[,i+1],data = species_prev_filter)
   b <- summary(a)
-  c <- as.data.frame(coefficients(b))
+  c <- as. data.frame(coefficients(b))
   d <- c[2,3]
   raw_result$value[i]<- d
 }
@@ -159,7 +159,7 @@ BiocManager::install("Maaslin2")
 install.packages("devtools")
 library("devtools")
 install_github("biobakery/Maaslin2")
-#method 3 error:loading 'rlang' 0.4.12,but need >= 1.0.0
+#method 3 error: loading 'rlang' 0.4.12, but need >= 1.0.0
 remove.packages('rlang')
 remove.packages('Rcpp')
 install.packages('Seurat',dependencies=T,source=T)
