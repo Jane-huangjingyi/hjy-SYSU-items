@@ -1,4 +1,5 @@
-setwd("D:/JANE/SYSU/xmktz/data_analysis/analysis_ABSI") 
+#--------------------------hjy------------------------------
+setwd(" ") 
 species <- read.csv("species_1415.csv",check.names = F)
 
 rm(list=ls())
@@ -53,3 +54,4 @@ dataset <- microtable$new(sample_table = sample_table,
                           tax_table = tax_table)
 dataset
 
+#--------------------------hjy------------------------------
