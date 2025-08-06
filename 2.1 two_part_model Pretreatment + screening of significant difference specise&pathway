@@ -1,6 +1,6 @@
 #-------------------------------hjy----------------------------
 #### Pathway setting
-setwd("D:/JANE/SYSU/xmktz/data_analysis/analysis_ABSI")
+setwd("  ")
 
 
 #### Packages loading
@@ -28,7 +28,7 @@ species_raw_table <- as.data.frame(t(species_raw_table))
 
 
 #### Prevalence filtering
-# Filter out species with the prevalence lower than 5%
+# Filter out species with a prevalence lower than 5%
 delete_list <- c()
 n <- c(1:ncol(species_raw_table))
 for (i in n) {
@@ -39,8 +39,8 @@ for (i in n) {
 species_prev_filter <- species_raw_table[,-delete_list]
 
 
-#### Construct a detect matrix (if 0 then "undetected", if 1 then detected)
-# A detect matrix of species
+#### Construct a detection matrix (if 0 then "undetected", if 1 then detected)
+# A detection matrix of species
 species_detect <- species_prev_filter
 n <- c(1:ncol(species_prev_filter))
 p <- c(1:nrow(species_prev_filter))
@@ -53,12 +53,12 @@ for (i in n) {
 }
 
 
-#### Select microbe with presence association with ABSI
+#### Select a microbe with a presence association with ABSI
 ABSI_list <- subset(group_list,select = c("ABSI"))
 species_detect <- merge(ABSI_list,species_detect,by="row.names")
 row.names(species_detect) <- species_detect[,1]
 species_detect <- species_detect[,-grep("Row.names",colnames(species_detect))]
-species_assoscation_detect <- data.frame(ID=NA,beta_presence=NA,intercept=NA,t_detect=NA,p_species_raw_detect=NA)
+species_assocation_detect <- data.frame(ID=NA,beta_presence=NA,intercept=NA,t_detect=NA,p_species_raw_detect=NA)
 n <- c(2:ncol(species_detect))
 for (i in n) {
   a <- glm(ABSI ~ species_detect[,i],data = species_detect)
@@ -68,19 +68,19 @@ for (i in n) {
   beta <- b[["coefficients"]][2,1]
   p_species <- b[["coefficients"]][2,4]
   ID <- colnames(species_detect)[i]
-  species_assoscation_detect_temp <- data.frame(ID=ID,beta_presence=beta,intercept=e1,t_detect=c,p_species_raw_detect=p_species)
+  species_assocation_detect_temp <- data.frame(ID=ID,beta_presence=beta,intercept=e1,t_detect=c,p_species_raw_detect=p_species)
   species_assoscation_detect <- rbind(species_assoscation_detect,species_assoscation_detect_temp)
 }
 species_assoscation_detect <- species_assoscation_detect[-1,]
 
 
-#### Select microbe with abundance association with ABSI
+#### Select a microbe with an abundance association with ABSI
 species_abundance <- species_prev_filter
 ABSI_list <- subset(group_list,select = c("ABSI"))
 species_abundance <- merge(ABSI_list,species_abundance,by="row.names")
 row.names(species_abundance) <- species_abundance[,1]
 species_abundance <- species_abundance[,-grep("Row.names",colnames(species_abundance))]
-species_assoscation_abundance <- data.frame(ID=NA,beta_abundance=NA,intercept=NA,t_abundance=NA,p_species_raw_abundance=NA)
+species_assocation_abundance <- data.frame(ID=NA,beta_abundance=NA,intercept=NA,t_abundance=NA,p_species_raw_abundance=NA)
 n <- c(2:ncol(species_abundance))
 for (i in n) {
   temp <- species_abundance
@@ -92,13 +92,13 @@ for (i in n) {
   beta <- b[["coefficients"]][2,1]
   p_species <- b[["coefficients"]][2,4]
   ID <- colnames(temp)[i]
-  species_assoscation_abundance_temp <- data.frame(ID=ID,beta_abundance=beta,intercept=e1,t_abundance=c,p_species_raw_abundance=p_species)
+  species_assocation_abundance_temp <- data.frame(ID=ID,beta_abundance=beta,intercept=e1,t_abundance=c,p_species_raw_abundance=p_species)
   species_assoscation_abundance <- rbind(species_assoscation_abundance,species_assoscation_abundance_temp)
 }
 species_assoscation_abundance <- species_assoscation_abundance[-1,]
 
 
-#### Calculate their combined p value
+#### Calculate their combined p-value
 two_stage_p_species_temp1 <- subset(species_assoscation_detect,select = c("ID","p_species_raw_detect","beta_presence","t_detect"))
 two_stage_p_species_temp2 <- subset(species_assoscation_abundance,select = c("ID","p_species_raw_abundance","beta_abundance","t_abundance"))
 two_stage_p_species <- merge(two_stage_p_species_temp1,two_stage_p_species_temp2,by="ID")
@@ -128,7 +128,7 @@ for (i in n) {
 }
 
 
-#### Summary the associated microbe
+#### Summarize the associated microbe
 length(which(two_stage_p_species$final_p<0.05))
 two_stage_p_species_diff <- two_stage_p_species[which(two_stage_p_species$final_p<0.05),]
 diff_list <- two_stage_p_species_diff$ID
@@ -136,7 +136,7 @@ diff_list <- two_stage_p_species_diff$ID
 
 #### Calculate the permutation importance of the final p
 species_two_stage_diff_table <- species_prev_filter[,colnames(species_prev_filter)%in%diff_list]
-permutated_results <- as.data.frame(array(dim=c(100,50)))
+permutated_results <- as. data.frame(array(dim=c(100,50)))
 colnames(permutated_results) <- two_stage_p_species_diff$ID
 n <- c(1:ncol(species_two_stage_diff_table))
 p <- c(1:100)
