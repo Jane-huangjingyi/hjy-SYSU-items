@@ -2,9 +2,9 @@
 library(tidyverse)
 library(pheatmap)
 library(Hmisc)
-setwd("D:/JANE/SYSU/xmktz/data_analysis/analysis_ABSI") #?ļ?????·??
-metabolic <- read.csv("??л??1417.csv",row.names=1,check.names = F)
-metabolic_select<-read.csv("ɸѡ??л??.csv",check.names = F)
+setwd("  ") #设置路径
+metabolic <- read.csv("  .csv",row.names=1,check.names = F)#调取
+metabolic_select<-read.csv("  .csv",check.names = F)#调取
 rownames(metabolic_select)<- metabolic_select$met
 metabolic <-merge(metabolic_select,metabolic,by="row.names")
 rownames(metabolic)<-metabolic$Row.names
@@ -12,14 +12,14 @@ metabolic$Row.names=NULL
 metabolic$met=NULL
 metabolic <- as.data.frame(t(metabolic))
 metabolic$ID <- rownames(metabolic)
-write.csv(metabolic,"ɸѡmetabolic.csv")
+write.csv(metabolic,"metabolic.csv")
 
 data <- read.csv("Metadata.csv",check.names = F,row.names=1,fileEncoding = 'GBK')
 ABSI <- subset(data,select = c("ABSI"))
 rownames(ABSI) <- rownames(data)
 
-species <- read.csv("????species(permutation+LASSO).csv", header = T,sep = ",",check.names = F) 
-pathway <- read.csv("????pathway(permutation+LASSO).csv", header = T,sep = ",",check.names = F) 
+species <- read.csv(" species(permutation+LASSO).csv", header = T,sep = ",",check.names = F) 
+pathway <- read.csv(" pathway(permutation+LASSO).csv", header = T,sep = ",",check.names = F) 
 colnames(species)[1]<-"ID"
 mer <- merge(species,pathway,by="ID")
 mer <- merge(mer,metabolic,by="ID")
@@ -48,7 +48,7 @@ for (i in n) {
 metabolic_selected_value <- metabolic_selected_value[-1,]
 raw_table <- metabolic_selected_value
 
-#BHУ??------------------------------------------------------------------------------
+#BHУ------------------------------------------------------------------------------
 raw_table$padjust <- p.adjust(raw_table$p,method = "BH")
 
 write.csv(raw_table,"??л??metabolic_BH.csv",row.names = F)
