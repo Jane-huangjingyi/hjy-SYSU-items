@@ -7,14 +7,14 @@ library("vegan")
 library("dplyr")
 library("reshape2")
 library("colorspace")
-setwd("D:/JANE/SYSU/xmktz/data_analysis/analysis_ABSI") 
+setwd(" ") 
 
 species <- read.csv("species_1419.csv",check.names = F)
 #choose <-read.csv("差异species筛选25.csv",check.names = F)
 #merge <- merge(species,choose,by="ID")
 #row.names(merge) <- merge[,1]
 row.names(species) <- species[,1]
-species <- as.data.frame(t(species[,-1]))
+species <- as. data.frame(t(species[,-1]))
 delete_list <- c()
 n <- c(1:ncol(species))
 for (i in n) {
@@ -37,7 +37,7 @@ species <- species[,1:ncol(species)-1]
 #write.csv(species,"差异species(permutation).csv")
 #library("DGCA")
 #darmanis这个数据框就是菌群的数据框，转置后每一个列名是菌名
-#darmanis <- as.data.frame(species)
+#darmanis <- as. data.frame(species)
 #design_mat <- as.matrix(ABSI_group)
 #ddcor_res = ddcorAll(inputMat = darmanis, design = design_mat, compare = c("0", "1"))
 
@@ -49,7 +49,7 @@ occor.fdr <- p.adjust(occor.p, method="fdr")
 
 
 #### Calculate the permutation importance of p
-permutated_p <- as.data.frame(array(dim = c(ncol(species),ncol(species))))
+permutated_p <- as. data.frame(array(dim = c(ncol(species),ncol(species))))
 #改名行名菌名，列名代谢物名
 row.names(permutated_p) <- colnames(species)[1:ncol(species)]
 colnames(permutated_p) <- colnames(species)[1:ncol(species)]
