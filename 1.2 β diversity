@@ -8,9 +8,9 @@ library(magrittr)
 
 #PCOA
 ## read
-setwd("D:/JANE/SYSU/xmktz/data_analysis/analysis_ABSI") 
+setwd("  ") 
 pri <- read.csv("genus_1419.csv",  row.names = 1, sep = ",",header = T,stringsAsFactors =F, check.names = F) 
-pri <- as.data.frame(t(pri))
+pri <- as. data.frame(t(pri))
 group <- read.csv("graphpad1.csv", row.names = 1, header = T, sep = ",", check.names = F)
 merge<- merge(pri,group,by="row.names")
 colnames(merge)[1]<-"ID"
@@ -41,7 +41,7 @@ pca <- prcomp(pri1,center = TRUE, scale. = TRUE)
 pca.var <- pca$sdev^2 
 
 #Calculate the ratio of each PC to the sum of all 
-pca.var.per <- round(pca.var/sum(pca.var)*100,2)
+PCA.var.per <- round(pca.var/sum(pca.var)*100,2)
 ##Visualize with a histogram
 barplot(pca.var.per, main="Scree Plot", xlab="Principal Component", ylab="Percent Variation")  
 
@@ -52,7 +52,7 @@ pca.data <- data.frame(row.names=rownames(pca$x),
 pca.data <- cbind.data.frame(pca.data,group)
 
 ##Add the centroids of the two groups to the graph 
-#calculate the mean values of the two groups of samples in the PCOA coordinates,respectively
+#calculate the mean values of the two groups of samples in the PCOA coordinates, respectively
 #and display them as large central points
 group_average <- aggregate(cbind(PC1, PC2)~ABSI_group, data = pca.data, FUN = mean)
 
@@ -62,7 +62,7 @@ ggplot(pca.data)+
   theme(panel.grid = element_blank(), panel.background = element_blank(),
         axis.line = element_line(color = 'black'), legend.key = element_blank()) +
   labs(x ="PC1", y = "PC2",title="PCA" ,color = '')+
-  #scale_color_manual(values=c("#45bd9b","#fece71","#f05179"),breaks=c("0","1","2"),labels=c("WC_obsity","same","ABSI_obesity"))+
+  #scale_color_manual(values=c("#45bd9b","#fece71","#f05179"),breaks=c("0", "1" , "2"),labels=c("WC_obsity", "same", "ABSI_obesity"))+
   scale_color_manual(values=c("#f05179","#45bd9b"),breaks=c("1","2"),labels=c("ABSI_obesity","WC_obsity"))+
   scale_x_continuous(limits = c(-1,1))+
   scale_y_continuous(limits = c(-5,3))+
@@ -87,12 +87,12 @@ pcoa1 <- paste('PCoA1 :', round(100*pcoa_exp[1], 2), '%')
 pcoa2 <- paste('PCoA2 :', round(100*pcoa_exp[2], 2), '%')
 #Extract the coordinates of the first two axes and add the grouping information for the sample
 site <- data.frame(pcoa$point)[1:2]
-site <- cbind.data.frame(site, group)
+site <- cbind. data.frame(site, group)
 names(site)[1:3] <- c('pcoa1', 'pcoa2','group')
 
 #ggplot2
 ##add the center of mass to the graph 
-#calculate the mean of the two sets of samples in PCOA coordinates respectively
+#calculate the mean of the two sets of samples in PCOA coordinates, respectively
 #and display it as a large point in the center
 group_average <- aggregate(cbind(pcoa1, pcoa2)~group, data = site, FUN = mean)
 
@@ -102,7 +102,7 @@ ggplot(site)+
   theme(panel.grid = element_blank(), panel.background = element_blank(),
         axis.line = element_line(color = 'black'), legend.key = element_blank()) +
   labs(x = pcoa1, y = pcoa2,title="PCOA" ,color = '')+
-  #scale_color_manual(values=c("#45bd9b","#fece71","#f05179"),breaks=c("0","1","2"),labels=c("WC_obsity","same","ABSI_obesity"))+
+  #scale_color_manual(values=c("#45bd9b","#fece71","#f05179"),breaks=c("0", "1", "2"),labels=c("WC_obsity" ,"same", "ABSI_obesity"))+
   scale_color_manual(values=c("#f05179","#45bd9b"),breaks=c("1","2"),labels=c("ABSI_obesity","WC_obsity"))+
   stat_ellipse(aes(x = pcoa1, y = pcoa2, color =as.factor(group)), level = 0.95, linetype = 4, show.legend = FALSE) +  #95% CI
   geom_point(data = group_average, aes(x = pcoa1, y = pcoa2, color = as.factor(group)), size = 2, show.legend = FALSE)+  
@@ -116,7 +116,7 @@ NMDS = data.frame(MDS1 = sol$points[,1], MDS2 = sol$points[,2])
 site <- cbind.data.frame(NMDS, group)
 
 ##Add the centroids of the two groups to the graph 
-#calculate the mean values of the two groups of samples in the PCOA coordinates respectively
+#calculate the mean values of the two groups of samples in the PCOA coordinates, respectively
 #and display them as large central points
 group_average <- aggregate(cbind(MDS1, MDS2)~ABSI_group, data = site, FUN = mean)
 
