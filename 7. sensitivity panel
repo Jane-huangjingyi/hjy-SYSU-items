@@ -17,10 +17,10 @@ library("reshape2")
 library("relaimpo")
 library("rsq")
 
-#----------------------------??same_species??----------------------------
-setwd("D:/JANE/SYSU/xmktz/data_analysis/analysis_ABSI") #?ļ?????·??
+#----------------------------same_species----------------------------
+setwd("  ") #调取
 metadata <- read.csv("Metadata_same??BMI_ABSI??.csv",row.names = 1,check.names = F)
-ABSI_list <- subset(metadata,select = c("ABSI","Age","Sex","activity_grade","alcohol","smoke","DD","Chronic_disease"))
+ABSI_list <- subset(metadata, select = c("ABSI", "Age", "Sex", "activity_grade", "alcohol", "smoke", "DD", "Chronic_disease"))
 species <- read.csv("species_caculate_experience_lm.csv", header = T,sep = ",",check.names = F,row.names = 1) 
 merge<- merge(ABSI_list,species,by="row.names")
 rownames(merge) <- merge[,1]
@@ -28,10 +28,10 @@ merge <- merge[,2:10]
 #write.csv(merge,"??same??species_lm.csv")
 
 
-#----------------------------??same_pathway??----------------------------
+#----------------------------same_pathway---------------------------
 setwd("D:/JANE/SYSU/xmktz/data_analysis/analysis_ABSI") #?ļ?????·??
 metadata <- read.csv("Metadata_same??BMI_ABSI??.csv",row.names = 1,check.names = F)
-ABSI_list <- subset(metadata,select = c("ABSI","Age","Sex","activity_grade","alcohol","smoke","DD","Chronic_disease"))
+ABSI_list <- subset(metadata, select = c("ABSI", "Age", "Sex", "activity_grade", "alcohol", "smoke", "DD", "Chronic_disease"))
 species <- read.csv("pathway_caculate_experience_lm.csv", header = T,sep = ",",check.names = F,row.names = 1) 
 merge<- merge(ABSI_list,species,by="row.names")
 rownames(merge) <- merge[,1]
@@ -39,20 +39,20 @@ merge <- merge[,2:10]
 #write.csv(merge,"??same??pathway_lm.csv")
 
 
-#----------------------------??different_species??----------------------------
+#----------------------------different_species----------------------------
 setwd("D:/JANE/SYSU/xmktz/data_analysis/analysis_ABSI") #?ļ?????·??
 metadata <- read.csv("Metadata_different??BMI_ABSI??.csv",row.names = 1,check.names = F)
-ABSI_list <- subset(metadata,select = c("ABSI","Age","Sex","activity_grade","alcohol","smoke","DD","Chronic_disease"))
+ABSI_list <- subset(metadata,select = c("ABSI", "Age", "Sex", "activity_grade", "alcohol", "smoke", "DD", "Chronic_disease"))
 species <- read.csv("species_caculate_experience_lm.csv", header = T,sep = ",",check.names = F,row.names = 1) 
 merge<- merge(ABSI_list,species,by="row.names")
 rownames(merge) <- merge[,1]
 merge <- merge[,2:10]
 #write.csv(merge,"??different??species_lm.csv")
 
-#----------------------------??different_pathway??----------------------------
+#----------------------------different_pathway----------------------------
 setwd("D:/JANE/SYSU/xmktz/data_analysis/analysis_ABSI") #?ļ?????·??
 metadata <- read.csv("Metadata_different??BMI_ABSI??.csv",row.names = 1,check.names = F)
-ABSI_list <- subset(metadata,select = c("ABSI","Age","Sex","activity_grade","alcohol","smoke","DD","Chronic_disease"))
+ABSI_list <- subset(metadata,select = c("ABSI", "Age", "Sex", "activity_grade", "alcohol", "smoke", "DD", "Chronic_disease"))
 species <- read.csv("pathway_caculate_experience_lm.csv", header = T,sep = ",",check.names = F,row.names = 1) 
 merge<- merge(ABSI_list,species,by="row.names")
 rownames(merge) <- merge[,1]
@@ -60,10 +60,10 @@ merge <- merge[,2:10]
 #write.csv(merge,"??different??pathway_lm.csv")
 
 
-#----------------------------?????¿?ʼ----------------------------
+#----------------------------panel数据分析---------------------------
 
 colnames(merge)[9] <- "score"
-#???о???panel
+#原始panel
 summary(lm(ABSI~score,data=merge))
 #panel 1
 a1 <- lm(ABSI~score+Age+Sex,data=merge,na.action=na.exclude)
@@ -83,21 +83,22 @@ b3 <- lm(ABSI~Age+Sex+activity_grade+alcohol+smoke+DD+Chronic_disease,data=merge
 summary(a3)
 summary(b3)
 anova(a3,b3)
-#˳??1?????Ա?2???ʽ3????4??
+
+#输出anova
 anova(b1,b2)
 anova(b2,b3)
 anova(b3,a3)
 
 
 
-#---------------------------------logistics?ع?---------------------------------
-group <- subset(metadata,select = c("ABSI_obesity","Age","Sex","activity_grade","alcohol","smoke","DD","Chronic_disease"))
+#---------------------------------logistics分析--------------------------------
+group <- subset(metadata,select = c("ABSI", "Age", "Sex", "activity_grade", "alcohol", "smoke", "DD", "Chronic_disease"))
 lm <- species
-mer <- merge(lm,group,by="row.names")
+mer <- merge(lm, group,by="row.names")
 colnames(mer)[1] <- "ID"
 colnames(mer)[2] <- "score"
-#???о???panel
-#a <-glm(formula = ABSI_obesity~score,family = binomial(link = "logit"),data=mer)
+#原始panel
+#a <-glm(formula = ABSI_obesity~score, family = binomial(link = "logit"),data=mer)
 #panel 1
 #a1 <- glm(formula = ABSI_obesity~score+Age+Sex,family = binomial(link = "logit"),data=mer)
 #b1 <- glm(formula = ABSI_obesity~Age+Sex,family = binomial(link = "logit"),data=mer)
@@ -109,8 +110,8 @@ a3 <- glm(formula = ABSI_obesity~score+Age+Sex+activity_grade+alcohol+smoke+DD+C
 #b3 <- glm(formula = ABSI_obesity~Age+Sex+activity_grade+alcohol+smoke+DD+Chronic_disease,family = binomial(link = "logit"),data=mer)
 
 
-#ȡPֵ\waldֵ\Bֵ\ORֵ\ORֵ??95%CI
-cluculated <- a3 #??
+#ȡPֵ\waldֵ\Bֵ\ORֵ\ORֵ 95%CI
+cluculated <- a3 #赋值
 p<-summary(cluculated)$coefficients[,4]
 wald<-summary(cluculated)$coefficients[,3]^2
 valueB<-coef(cluculated)
