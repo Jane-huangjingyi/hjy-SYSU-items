@@ -164,7 +164,7 @@ plot(igraph,main="Co-occurrence network",vertex.frame.color=NA,vertex.label=NA,e
 #sum(igraph.weight>0)# number of postive correlation
 #sum(igraph.weight<0)# number of negative correlation
 
-# set edge color，postive correlation 设定为red, negative correlation设定为blue
+# set edge color, positive correlation 设定为red, negative correlation设定为blue
 E.color = igraph.weight
 E.color = ifelse(E.color>0, "#eb9498",ifelse(E.color<0, "#3787b1","grey"))
 E(igraph)$color = as.character(E.color)
