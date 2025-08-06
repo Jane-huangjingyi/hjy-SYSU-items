@@ -1,10 +1,10 @@
 #----------------------------hjy------------------------
 library(VennDiagram)
 
-setwd("D:/JANE/SYSU/xmktz/data_analysis/analysis_ABSI") #?ļ?????·??
+setwd("  ") #调取数据文件
 data <- read.csv("venn3.csv", header = T, sep = ",", check.names = F)
 
-#-----------------4ά------------------
+#-----------------4交叉------------------
 venn_list <-list(permutation_group=data$permutation_group,maaslin=data$maaslin,maaslin_group=data$maaslin_group,K_W=data$K_W)
 venn.plot <- venn.diagram(venn_list, filename = NULL,
   col = "black", lty = "dotted", lwd = 4,
@@ -17,8 +17,7 @@ venn.plot <- venn.diagram(venn_list, filename = NULL,
   cat.cex = 1.5, cat.fontfamily = "serif")
 grid.draw(venn.plot)
 
-#-----------------3ά------------------
-#???ӻ?????
+#-----------------3交叉------------------
 venn_list <-list(permutation_group=data$permutation_group,maaslin=data$maaslin,K_W=data$K_W)
 venn.plot <- venn.diagram(venn_list, filename = NULL,
   col = "transparent",
@@ -27,13 +26,13 @@ venn.plot <- venn.diagram(venn_list, filename = NULL,
   label.col = c("darkblue", "darkgreen", "orange", "darkred",
                 "black", "#0c6db2", "darkorchid4"),
   cex = 2.5,fontfamily = "serif",fontface = "bold",
-  cat.default.pos = "text",cat.col = c("darkblue", "orange", "darkorchid4"),
+  cat. default.pos = "text", cat.col = c("darkblue", "orange", "darkorchid4"),
   cat.cex = 1.5,cat.fontfamily = "serif",
   cat.dist = c(0.06, 0.06, 0.04),cat.pos = 0);
 grid.draw(venn.plot)
 grid.newpage()
 
-#???佻??Ԫ?ػ???
+
 inter <- get.venn.partitions(venn_list)
 for (i in 1:nrow(inter)) inter[i,'values'] <- paste(inter[[i,'..values..']], collapse = ', ')
 write.csv(inter[-c(4, 5)], 'venn_inter.csv', row.names = FALSE)
