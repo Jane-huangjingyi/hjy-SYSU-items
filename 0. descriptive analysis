@@ -2,7 +2,7 @@
 library(Hmisc)
 library(pastecs)
 library(doBy)
-setwd("D:/JANE/SYSU/xmktz/data_analysis/analysis_ABSI") 
+setwd("  ") 
 data <- read.csv("Metadata.csv",check.names = F,row.names=1,fileEncoding = 'GBK')
 
 summary(data$Sex)
